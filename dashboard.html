@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>슈퍼맥스 12 대시보드</title>
+    <style>
+        :root {
+            --primary: #4361ee; --secondary: #6c757d;
+            --success: #198754; --info: #0dcaf0; --warning: #ffc107; --danger: #dc3545;
+            --light: #f8f9fa; --dark: #212529;
+            --shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+        }
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0; padding: 24px; background-color: #f0f2f5; color: var(--dark);
+        }
+        .container { max-width: 1400px; margin: auto; }
+        h1 { text-align: center; font-size: 2rem; font-weight: 800; margin-bottom: 24px; color: var(--dark); }
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+        .card { background-color: white; padding: 24px; border-radius: 16px; box-shadow: var(--shadow); }
+        .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .card-header h2 { font-size: 1.5rem; margin: 0; }
+        .card-header svg { width: 28px; height: 28px; }
+        .attendance-info { font-size: 1.2rem; font-weight: 500; text-align: center; margin-bottom: 24px; }
+        .attendance-info .count { font-size: 2rem; font-weight: 700; color: var(--primary); }
+        
+        /* ⭐️ 카드형 진행도 스타일 ⭐️ */
+        .progress-card-grid {
+            display: grid;
+            grid-template-columns: 1fr; /* 전체 진행도는 한 줄을 다 씀 */
+            gap: 16px;
+        }
+        .progress-card {
+            background-color: var(--light);
+            padding: 16px;
+            border-radius: 12px;
+        }
+        .progress-card.overall { /* 전체 진행도 카드 스타일 */
+            background-color: var(--primary);
+            color: white;
+        }
+        .progress-card.overall .progress-item label span,
+        .progress-card.overall .progress-item .progress-label {
+            color: white;
+            opacity: 0.9;
+        }
+        .progress-card.overall .progress-bar {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .progress-item label { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 8px; font-size: 1rem; }
+        .progress-label { color: var(--secondary); font-size: 0.9rem; }
+        .progress-bar { background-color: #e9ecef; border-radius: 8px; height: 10px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; width: 0%; transition: width 0.5s ease-in-out; border-radius: 8px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 16px; border-bottom: 1px solid #dee2e6; text-align: center; }
+        thead th { background-color: var(--light); color: var(--secondary); font-size: 0.8rem; letter-spacing: 0.5px; }
+        tbody tr:last-child td { border-bottom: none; }
+        .error-record { color: var(--danger); font-weight: 600; }
+        @media (max-width: 992px) { .dashboard-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>슈퍼맥스 12 대시보드</h1>
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m4.93 19.07 1.41-1.41"></path><path d="m17.66 6.34 1.41-1.41"></path></svg>
+                    <h2>오전조 진행 현황</h2>
+                </div>
+                <div id="morning-attendance" class="attendance-info"><span class="count">0</span> / 0 명 참석</div>
+                <div id="morning-progress-cards" class="progress-card-grid"></div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+                    <h2>오후조 진행 현황</h2>
+                </div>
+                <div id="afternoon-attendance" class="attendance-info"><span class="count">0</span> / 0 명 참석</div>
+                <div id="afternoon-progress-cards" class="progress-card-grid"></div>
+            </div>
+        </div>
+
+        <div class="card">
+             <div class="card-header">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                <h2>기록 오류 목록</h2>
+            </div>
+            <table>
+                <thead><tr><th>시간</th><th>이름</th><th>수험번호</th><th>지점</th><th>종목</th><th>입력된 기록</th></tr></thead>
+                <tbody id="error-list"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://supermax.kr';
+        const EVENTS = { '제멀': '제자리멀리뛰기', '메디신볼': '메디신볼', '10m': '10m 왕복', '배근력': '배근력' };
+        const EVENT_COLORS = { '제멀': '#4361ee', '메디신볼': '#4cc9f0', '10m': '#f8961e', '배근력': '#f72585' };
+
+        // ⭐️ UI 렌더링 함수 수정
+ // dashboard.html
+function renderProgress(session, data) {
+    document.querySelector(`#${session}-attendance .count`).textContent = data.attended;
+    document.querySelector(`#${session}-attendance`).innerHTML = `<span class="count">${data.attended}</span> / ${data.total} 명 참석`;
+    
+    const progressCardGrid = document.getElementById(`${session}-progress-cards`);
+    progressCardGrid.innerHTML = '';
+
+    // 전체 진행도 계산
+    let totalCompleted = 0;
+    for (const eventKey in EVENTS) {
+        totalCompleted += data.events[eventKey] || 0;
+    }
+    const overallProgress = (data.attended > 0) ? Math.round((totalCompleted / (data.attended * 4)) * 100) : 0;
+
+    // 전체 진행도 카드 추가 (⭐️ 퍼센티지로 표시)
+    progressCardGrid.innerHTML += `
+        <div class="progress-card overall">
+            <div class="progress-item">
+                <label><span>전체 진행도</span> <span>${overallProgress}%</span></label>
+                <div class="progress-bar">
+                    <div class="progress-bar-fill" style="width: ${overallProgress}%; background-color: white;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // 종목별 진행도 카드 추가 (⭐️ 퍼센티지로 표시)
+    for (const eventKey in EVENTS) {
+        const completed = data.events[eventKey] || 0;
+        const progress = (data.attended > 0) ? Math.round((completed / data.attended) * 100) : 0;
+        
+        progressCardGrid.innerHTML += `
+            <div class="progress-card">
+                <div class="progress-item">
+                    <label><span>${EVENTS[eventKey]}</span> <span>${progress}%</span></label>
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" style="width: ${progress}%; background-color: ${EVENT_COLORS[eventKey]};"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+        async function updateDashboard() {
+            try {
+                const response = await fetch(`${API_URL}/26susi/dashboard/all`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    renderProgress('morning', result.data.morning);
+                    renderProgress('afternoon', result.data.afternoon);
+
+                    const errorTbody = document.getElementById('error-list');
+                    if (result.errors && result.errors.length > 0) {
+                        let errorRows = '';
+                        result.errors.forEach(item => {
+                            const recordTime = new Date(item.created_at).toLocaleTimeString('ko-KR');
+                            errorRows += `<tr><td>${recordTime}</td><td>${item.student_name}</td><td>${item.exam_number}</td><td>${item.branch_name}</td><td>${item.event}</td><td class="error-record">${item.record_value}</td></tr>`;
+                        });
+                        errorTbody.innerHTML = errorRows;
+                    } else {
+                        errorTbody.innerHTML = `<tr><td colspan="6">현재 기록 오류가 없습니다.</td></tr>`;
+                    }
+                }
+            } catch (error) {
+                console.error('대시보드 업데이트 실패:', error);
+            }
+        }
+
+        window.onload = () => {
+            updateDashboard();
+            setInterval(updateDashboard, 10000);
+        };
+    </script>
+</body>
+</html>

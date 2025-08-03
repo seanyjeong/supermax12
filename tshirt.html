@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <title>티셔츠 재고 관리</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background-color: #f4f4f8; }
+        .container { max-width: 1200px; margin: auto; }
+        h1 { text-align: center; }
+        .card { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: center; }
+        th { background-color: #f8f9fa; font-weight: 600; }
+        select, button { padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-family: inherit; font-size: 0.9rem; }
+        button { background-color: #28a745; color: white; cursor: pointer; border: none; }
+        .type-new { color: #007bff; font-weight: bold; }
+        .type-exchange { color: #ffc107; font-weight: bold; }
+        tr.status-complete { background-color: #f8f9fa; color: #6c757d; }
+        tr.status-complete select, tr.status-complete button { opacity: 0.6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>신규/교환 티셔츠 관리</h1>
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>유형</th><th>교육원</th><th>이름</th><th>수험번호</th>
+                        <th>반납 사이즈(교환시)</th><th>지급 사이즈</th>
+                        <th>처리 상태</th><th>저장</th>
+                    </tr>
+                </thead>
+                <tbody id="tshirt-table"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://supermax.kr';
+        const SIZES = ['S', 'M', 'L', 'XL', '2XL', '3XL'];
+
+        async function loadTshirts() {
+            try {
+                const response = await fetch(`${API_URL}/26susi/tshirts`);
+                const result = await response.json();
+                const tbody = document.getElementById('tshirt-table');
+                
+                if (!result.success || result.data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="8">관리할 티셔츠 목록이 없습니다.</td></tr>`;
+                    return;
+                }
+
+                let rows = '';
+                result.data.forEach(item => {
+                    const isExchange = item.type === '교환';
+                    const sizeOptions = SIZES.map(s => `<option value="${s}">${s}</option>`).join('');
+                    const statusOptions = `<option value="대기">대기</option><option value="완료">완료</option>`;
+                    const isComplete = item.status === '완료';
+
+                    rows += `
+                        <tr class="${isComplete ? 'status-complete' : ''}" id="row-${item.id}">
+                            <td class="${isExchange ? 'type-exchange' : 'type-new'}">${item.type}</td>
+                            <td>${item.branch_name}</td>
+                            <td>${item.student_name}</td>
+                            <td>${item.exam_number || '-'}</td>
+                            <td>
+                                <select id="original-size-${item.id}" ${!isExchange ? 'disabled' : ''}>
+                                    <option value="">-</option>
+                                    ${sizeOptions}
+                                </select>
+                            </td>
+                            <td><select id="new-size-${item.id}"><option value="">선택</option>${sizeOptions}</select></td>
+                            <td><select id="status-${item.id}">${statusOptions}</select></td>
+                            <td><button onclick="saveTshirt(${item.id})">저장</button></td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = rows;
+
+                // 저장된 값으로 select box 초기화
+                result.data.forEach(item => {
+                    if (item.original_size) document.getElementById(`original-size-${item.id}`).value = item.original_size;
+                    if (item.new_size) document.getElementById(`new-size-${item.id}`).value = item.new_size;
+                    if (item.status) document.getElementById(`status-${item.id}`).value = item.status;
+                });
+            } catch (error) {
+                document.getElementById('tshirt-table').innerHTML = `<tr><td colspan="8">데이터 로딩 중 오류가 발생했습니다.</td></tr>`;
+            }
+        }
+
+        async function saveTshirt(id) {
+            const original_size = document.getElementById(`original-size-${id}`).value || null;
+            const new_size = document.getElementById(`new-size-${id}`).value || null;
+            const status = document.getElementById(`status-${id}`).value;
+
+            try {
+                const response = await fetch(`${API_URL}/26susi/tshirts/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ original_size, new_size, status })
+                });
+                const result = await response.json();
+                alert(result.message);
+                if (result.success) {
+                    // 저장 성공 시 해당 행의 스타일 업데이트
+                    const row = document.getElementById(`row-${id}`);
+                    if (status === '완료') {
+                        row.classList.add('status-complete');
+                    } else {
+                        row.classList.remove('status-complete');
+                    }
+                }
+            } catch (error) {
+                alert('업데이트 중 오류가 발생했습니다.');
+            }
+        }
+        
+        window.onload = loadTshirts;
+    </script>
+</body>
+</html>

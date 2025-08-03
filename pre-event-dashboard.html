@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <title>사전 현황판 (교육원별)</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; padding: 20px; background-color: #f4f4f8; }
+        .container { max-width: 1200px; margin: auto; }
+        h1 { text-align: center; }
+        .toolbar { margin-bottom: 20px; text-align: right; }
+        .toolbar a { padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; }
+        .session-container { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .session-column { background-color: #fff; padding: 24px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .session-column h2 { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 16px; text-align: center; }
+        .branch-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+        .branch-card { background-color: #f8f9fa; border-radius: 12px; padding: 16px; border: 1px solid #dee2e6; cursor: pointer; transition: all 0.2s; }
+        .branch-card:hover { transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .branch-card h3 { margin: 0 0 12px 0; font-size: 1.2rem; text-align: center; }
+        .stats-list { list-style: none; padding: 0; margin: 0; font-size: 0.9rem; }
+        .stats-list li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e9ecef; }
+        .stats-list li:last-child { border-bottom: none; }
+        .stats-list span:last-child { font-weight: 600; }
+        
+        /* ⭐️ 모달 스타일 추가 ⭐️ */
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); }
+        .modal-content { background-color: #fff; margin: 15% auto; padding: 24px; border-radius: 16px; width: 90%; max-width: 500px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #dee2e6; padding-bottom: 16px; margin-bottom: 16px; }
+        .modal-header h2 { margin: 0; font-size: 1.5rem; }
+        .close-btn { font-size: 2rem; font-weight: bold; color: #aaa; cursor: pointer; }
+        .pending-list { list-style-type: decimal; padding-left: 20px; }
+        .pending-list li { padding: 5px 0; }
+
+        @media (max-width: 992px) { .session-container { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>사전 현황판</h1>
+        <div class="toolbar"><a href="./tshirt.html" target="_blank">티셔츠 관리 페이지로 이동 &rarr;</a></div>
+        <div class="session-container">
+            <div class="session-column">
+                <h2>오전조</h2>
+                <div id="morning-cards" class="branch-card-grid"></div>
+            </div>
+            <div class="session-column">
+                <h2>오후조</h2>
+                <div id="afternoon-cards" class="branch-card-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pending-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title"></h2>
+                <span class="close-btn" onclick="closeModal()">&times;</span>
+            </div>
+            <ul id="modal-list" class="pending-list"></ul>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://supermax.kr';
+        const 오전조 = ['대전','강남','강동','광주','군포','논산','동탄','분당','서초','세종','수원','순천여수광양','아산','영통','용인','이천','익산','전주','군산','천안','청주','충주','하남','경산'];
+        const modal = document.getElementById('pending-modal');
+
+        async function loadBranchStatus() {
+            try {
+                const response = await fetch(`${API_URL}/26susi/dashboard/pre-event`);
+                const result = await response.json();
+                if (result.success) {
+                    const morningContainer = document.getElementById('morning-cards');
+                    const afternoonContainer = document.getElementById('afternoon-cards');
+                    let morningHtml = '', afternoonHtml = '';
+
+                    result.data.forEach(item => {
+                        // ⭐️ 카드 div에 onclick 이벤트 추가
+                        const cardHtml = `
+                            <div class="branch-card" onclick="showPendingStudents('${item.branch_name}')">
+                                <h3>${item.branch_name}</h3>
+                                <ul class="stats-list">
+                                    <li><span>미확인</span> <span>${item.pending} 명</span></li>
+                                    <li><span>참석</span> <span>${item.present} 명</span></li>
+                                    <li><span>결석</span> <span>${item.absent} 명</span></li>
+                                    <li><span>대체</span> <span>${item.substitute} 명</span></li>
+                                    <li><span>신규</span> <span>${item.new_count} 명</span></li>
+                                </ul>
+                            </div>
+                        `;
+                        if (오전조.includes(item.branch_name)) {
+                            morningHtml += cardHtml;
+                        } else {
+                            afternoonHtml += cardHtml;
+                        }
+                    });
+                    morningContainer.innerHTML = morningHtml || '<p>데이터가 없습니다.</p>';
+                    afternoonContainer.innerHTML = afternoonHtml || '<p>데이터가 없습니다.</p>';
+                }
+            } catch (error) { console.error("사전 현황판 로딩 오류:", error); }
+        }
+        
+        // ⭐️ 모달을 보여주는 함수 (신규 추가)
+        async function showPendingStudents(branchName) {
+            const modalTitle = document.getElementById('modal-title');
+            const modalList = document.getElementById('modal-list');
+            
+            modalTitle.textContent = `${branchName} 미확인 인원`;
+            modalList.innerHTML = '<li>로딩 중...</li>';
+            modal.style.display = 'block';
+
+            try {
+                const response = await fetch(`${API_URL}/26susi/students/pending?branchName=${encodeURIComponent(branchName)}`);
+                const result = await response.json();
+
+                if (result.success && result.data.length > 0) {
+                    modalList.innerHTML = result.data.map(s => `<li>${s.student_name} (${s.exam_number || '수험번호 미배정'})</li>`).join('');
+                } else {
+                    modalList.innerHTML = '<li>미확인 인원이 없습니다.</li>';
+                }
+            } catch (error) {
+                modalList.innerHTML = '<li>명단을 불러오는 데 실패했습니다.</li>';
+            }
+        }
+
+        // ⭐️ 모달을 닫는 함수 (신규 추가)
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        window.onload = loadBranchStatus;
+    </script>
+</body>
+</html>
