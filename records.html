@@ -7,37 +7,30 @@
     <style>
         :root {
             --primary: #4361ee; --primary-light: #e6e9ff;
-            --success: #4cc9f0; --success-light: #e6f7ff;
-            --warning: #f8961e; --danger: #f72585;
-            --gray: #6c757d; --light-gray: #f8f9fa;
+            --success: #00a3e4; --success-light: #8bc8fa;
+            --warning: #000000; --warning-light: #c2bebc;
+            --danger: #dc3545; --gray: #6c757d;
             --white: #ffffff; --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-            margin: 0; padding: 0; background-color: #f5f7ff; color: #333; line-height: 1.5;
+            margin: 0; padding: 0; background-color: #f5f7ff;
         }
         .container { max-width: 100%; padding: 16px; margin: 0 auto; }
         .login-container { height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 24px 0; color: var(--primary); }
+        h1 { text-align: center; font-size: 1.5rem; font-weight: 700; margin: 0 0 24px 0; color: var(--primary); }
         .card { background: var(--white); border-radius: 16px; padding: 24px; box-shadow: var(--shadow); width: 100%; }
         .login-box { text-align: center; }
-        .input-field { margin-bottom: 16px; position: relative; }
+        .input-field { margin-bottom: 16px; }
+        .login-box .btn { margin-top: 8px; }
         input, select {
             width: 100%; padding: 16px; border: 1px solid #e0e0e0;
-            border-radius: 12px; font-size: 1rem; font-family: inherit; transition: all 0.2s;
+            border-radius: 12px; font-size: 1rem; font-family: inherit;
         }
-        input:focus, select:focus {
-            outline: none; border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
-        }
-        .btn {
-            width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 1rem;
-            font-weight: 600; cursor: pointer; transition: all 0.2s;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2); }
+        .btn { padding: 16px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-primary { background-color: var(--primary); color: white; }
-        .btn-primary:hover { background-color: #3a56d4; }
         .selector { display: flex; gap: 10px; margin-bottom: 20px; }
         select {
             flex: 1; background-color: white; appearance: none;
@@ -45,32 +38,29 @@
             background-repeat: no-repeat; background-position: right 16px center; background-size: 16px;
         }
         .student-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
-        .student-btn {
-            padding: 12px 8px; border-radius: 12px; border: 1px solid #e0e0e0; background-color: white;
-            cursor: pointer; text-align: center; display: flex; flex-direction: column;
-            justify-content: center; transition: all 0.2s;
-        }
+        .student-btn { padding: 12px 8px; border-radius: 12px; border: 1px solid #e0e0e0; background-color: white; cursor: pointer; text-align: center; display: flex; flex-direction: column; justify-content: center; transition: all 0.2s; }
         .student-btn strong { font-size: 1rem; font-weight: 600; color: #333; margin-bottom: 4px; }
         .student-btn span { font-size: 0.8rem; color: var(--gray); word-break: break-all; }
         .student-btn.recorded { background-color: var(--success-light); border-color: var(--success); }
         .student-btn.absent { background-color: #f8f9fa; border-color: #e0e0e0; color: var(--gray); text-decoration: line-through; }
+        .student-btn.not-present { background-color: var(--warning-light); border-color: var(--warning); }
         .student-btn.selected { border-width: 2px; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2); }
         .record-form { margin-top: 20px; }
         .record-form h3 { margin-top: 0; margin-bottom: 16px; font-size: 1.2rem; }
-        .record-input { display: flex; align-items: center; margin-bottom: 16px; }
-        .record-input input { flex: 1; text-align: center; }
-        .score-display { font-size: 1.5rem; font-weight: 700; color: var(--danger); margin-left: 12px; min-width: 70px; text-align: center; }
-        .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
+        .record-entry { display: flex; align-items: center; margin-bottom: 16px; }
+        .record-entry input { flex-grow: 1; text-align: center; }
+        .score-display { font-size: 1.5rem; font-weight: 700; color: var(--danger); margin-left: 12px; min-width: 70px; text-align: right; }
+        .record-buttons { display: flex; gap: 10px; }
+        .record-buttons .btn { flex: 1; }
+        .btn-foul { background-color: var(--danger); color: white; border:none; }
+        .loader { display: none; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: white; animation: spin 1s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
         .pagination button { padding: 10px 16px; border: 1px solid var(--primary); background-color: white; cursor: pointer; border-radius: 8px; color: var(--primary); font-weight: 600; }
         .pagination button.active { background-color: var(--primary); color: white; }
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: rgba(0, 0, 0, 0.8); color: white; padding: 12px 24px; border-radius: 8px; font-size: 0.9rem; z-index: 1000; opacity: 0; transition: opacity 0.3s; max-width: 90%; text-align: center; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: rgba(0, 0, 0, 0.8); color: white; padding: 12px 24px; border-radius: 8px; font-size: 0.9rem; z-index: 1000; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
         .toast.show { opacity: 1; }
-        .loader { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: white; animation: spin 1s ease-in-out infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @media (max-width: 400px) {
-            .student-grid { grid-template-columns: repeat(2, 1fr); }
-            .selector { flex-direction: column; }
-        }
+        @media (max-width: 400px) { .student-grid { grid-template-columns: repeat(2, 1fr); } .selector { flex-direction: column; } }
     </style>
 </head>
 <body>
@@ -97,23 +87,24 @@
                     <option value="10m">10m 왕복달리기</option>
                     <option value="배근력">배근력</option>
                 </select>
-                <select id="group-select" onchange="loadStudents()" disabled>
-                    <option value="">조 선택</option>
-                </select>
+                <select id="group-select" onchange="loadStudents()" disabled><option value="">조 선택</option></select>
             </div>
         </div>
         <div id="student-grid" class="student-grid"></div>
         <div id="pagination-controls" class="pagination"></div>
         <div id="record-form" class="card record-form" style="display: none;">
             <h3><span id="form-student-name"></span> <small>(<span id="form-exam-number"></span>)</small></h3>
-            <div class="record-input">
-                <input type="number" id="record-value" oninput="getLiveScore()" placeholder="기록 입력">
+            <div class="record-entry">
+                <input type="text" id="record-value" oninput="getLiveScore()" placeholder="기록 또는 'F' 입력">
                 <span id="score-display" class="score-display">0점</span>
             </div>
-            <button class="btn btn-primary" id="save-btn" onclick="saveRecord()">
-                <span id="btn-text">기록 저장</span>
-                <span id="btn-loader" class="loader" style="display: none;"></span>
-            </button>
+            <div class="record-buttons">
+                <button class="btn btn-primary" id="save-btn" onclick="saveRecord()">
+                    <span class="btn-text">기록 저장</span>
+                    <span class="loader"></span>
+                </button>
+                <button class="btn btn-foul" onclick="saveFoulRecord()">파울(F)</button>
+            </div>
         </div>
     </div>
     <div id="toast" class="toast"></div>
@@ -123,32 +114,27 @@
         let currentStudents = [];
         let selectedStudentId = null;
         const studentsPerPage = 12;
+        let currentPage = 1;
 
-        function showToast(message, duration = 2000) { /* ... */ }
+        function showToast(message, duration = 2000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, duration);
+        }
         
-        // --- 로그인 기능 (⭐️ 마스터 권한 추가) ---
         function handleLogin() {
             const password = document.getElementById('passwordInput').value;
-            const eventPasswords = {
-                '6765': 'master', // 마스터 키
-                '0909': '제멀',
-                '0808': '10m',
-                '0707': '메디신볼',
-                '0606': '배근력'
-            };
-            
+            const eventPasswords = { '6765': 'master', '0909': '제멀', '0808': '10m', '0707': '메디신볼', '0606': '배근력' };
             const event = eventPasswords[password];
             if (event) {
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('main-content').style.display = 'block';
-                
                 const eventSelect = document.getElementById('event-select');
                 if (event === 'master') {
-                    // 마스터 로그인: 종목 선택 활성화
                     eventSelect.disabled = false;
                     showToast('마스터 권한으로 로그인했습니다.');
                 } else {
-                    // 일반 기록원 로그인: 해당 종목으로 설정 후 비활성화
                     eventSelect.value = event;
                     eventSelect.disabled = true;
                     loadGroups();
@@ -166,66 +152,48 @@
             document.getElementById('student-grid').innerHTML = '';
             document.getElementById('pagination-controls').innerHTML = '';
             document.getElementById('record-form').style.display = 'none';
-            
             if (!event) return;
-            
             try {
                 const response = await fetch(`${API_URL}/26susi/records/groups`);
                 const result = await response.json();
-                
                 if (result.success) {
-                    result.data.forEach(group => {
-                        groupSelect.innerHTML += `<option value="${group}">${group}조</option>`;
-                    });
+                    result.data.forEach(group => { groupSelect.innerHTML += `<option value="${group}">${group}조</option>`; });
                     groupSelect.disabled = false;
                 }
-            } catch (error) {
-                showToast('조 목록을 불러오는데 실패했습니다');
-            }
+            } catch (error) { showToast('조 목록을 불러오는데 실패했습니다'); }
         }
 
         async function loadStudents() {
             const event = document.getElementById('event-select').value;
             const group = document.getElementById('group-select').value;
             document.getElementById('record-form').style.display = 'none';
-            
             if (!group) return;
-            
             try {
                 const response = await fetch(`${API_URL}/26susi/records/students?group=${group}&event=${event}`);
                 const result = await response.json();
-                
                 if (result.success) {
                     currentStudents = result.data;
-                    renderPage(1); // 항상 첫 페이지로 리셋
+                    renderPage(1);
                 }
-            } catch (error) {
-                showToast('학생 목록을 불러오는데 실패했습니다');
-            }
+            } catch (error) { showToast('학생 목록을 불러오는데 실패했습니다'); }
         }
 
         function renderPage(page) {
+            currentPage = page;
             const grid = document.getElementById('student-grid');
             grid.innerHTML = '';
             document.getElementById('record-form').style.display = 'none';
-            
             const startIndex = (page - 1) * studentsPerPage;
-            const endIndex = startIndex + studentsPerPage;
-            const studentsToShow = currentStudents.slice(startIndex, endIndex);
+            const studentsToShow = currentStudents.slice(startIndex, startIndex + studentsPerPage);
             
             studentsToShow.forEach(s => {
                 let classes = 'student-btn';
                 if (s.attendance === '결석') classes += ' absent';
+                else if (s.attendance !== '참석') classes += ' not-present';
                 else if (s.record_value !== null) classes += ' recorded';
                 
-                grid.innerHTML += `
-                    <button class="${classes}" id="student-${s.id}" onclick="selectStudent(${s.id})">
-                        <strong>${s.exam_number || ''}</strong>
-                        <span>${s.student_name}</span>
-                    </button>
-                `;
+                grid.innerHTML += `<button class="${classes}" id="student-${s.id}" onclick="selectStudent(${s.id})"><strong>${s.exam_number || ''}</strong><span>${s.student_name}</span></button>`;
             });
-            
             renderPaginationControls(page);
         }
 
@@ -233,80 +201,72 @@
             const controls = document.getElementById('pagination-controls');
             controls.innerHTML = '';
             const totalPages = Math.ceil(currentStudents.length / studentsPerPage);
-            
             if (totalPages <= 1) return;
             
-            // 이전 버튼
-            if (currentPage > 1) {
-                controls.innerHTML += `<button onclick="renderPage(${currentPage - 1})">이전</button>`;
-            }
-            
-            // 페이지 번호
-            controls.innerHTML += `<button class="active">${currentPage}</button>`;
-            
-            // 다음 버튼
-            if (currentPage < totalPages) {
-                controls.innerHTML += `<button onclick="renderPage(${currentPage + 1})">다음</button>`;
+            for (let i = 1; i <= totalPages; i++) {
+                const activeClass = (i === currentPage) ? 'active' : '';
+                controls.innerHTML += `<button class="${activeClass}" onclick="renderPage(${i})">${i}</button>`;
             }
         }
         
         function selectStudent(studentId) {
             const student = currentStudents.find(s => s.id === studentId);
             if (!student || student.attendance === '결석') return;
-            
             selectedStudentId = studentId;
             document.querySelectorAll('.student-btn').forEach(btn => btn.classList.remove('selected'));
             document.getElementById(`student-${studentId}`).classList.add('selected');
-            
             document.getElementById('form-student-name').textContent = student.student_name;
             document.getElementById('form-exam-number').textContent = student.exam_number;
-            document.getElementById('record-value').value = student.record_value || '';
+            document.getElementById('record-value').value = student.record_value === 0 && student.score === 50 ? 'F' : (student.record_value || '');
             document.getElementById('score-display').textContent = `${student.score || 0}점`;
             document.getElementById('record-form').style.display = 'block';
-            
-            // 입력 필드에 자동 포커스
             document.getElementById('record-value').focus();
         }
 
         async function getLiveScore() {
             const event = document.getElementById('event-select').value;
-            const recordValue = document.getElementById('record-value').value;
+            const recordValue = document.getElementById('record-value').value.trim().toUpperCase();
             const student = currentStudents.find(s => s.id === selectedStudentId);
             
             if (!recordValue || !student) {
                 document.getElementById('score-display').textContent = `0점`;
                 return;
             }
-            
+            if (recordValue === 'F') {
+                document.getElementById('score-display').textContent = `50점`;
+                return;
+            }
+
             try {
                 const response = await fetch(`${API_URL}/26susi/records/calculate-score?event=${event}&gender=${student.gender}&recordValue=${recordValue}`);
                 const result = await response.json();
-                
                 if (result.success) {
                     document.getElementById('score-display').textContent = `${result.score}점`;
                 }
-            } catch (error) {
-                console.error('점수 계산 실패:', error);
-            }
+            } catch (error) { console.error('점수 계산 실패:', error); }
         }
 
-        async function saveRecord() {
+        async function saveFoulRecord() {
+            const student = currentStudents.find(s => s.id === selectedStudentId);
+            if (!student) return;
+            await saveRecord('F');
+        }
+
+        async function saveRecord(forcedValue = null) {
             const event = document.getElementById('event-select').value;
-            const recordValue = document.getElementById('record-value').value;
+            const recordValue = forcedValue || document.getElementById('record-value').value.trim().toUpperCase();
             const student = currentStudents.find(s => s.id === selectedStudentId);
             
             if (!recordValue || !student) {
-                showToast('기록을 입력해주세요');
-                return;
+                showToast('기록을 입력해주세요'); return;
             }
             
             const saveBtn = document.getElementById('save-btn');
-            const btnText = document.getElementById('btn-text');
-            const btnLoader = document.getElementById('btn-loader');
+            const btnText = saveBtn.querySelector('.btn-text');
+            const btnLoader = saveBtn.querySelector('.loader');
             
-            // 로딩 상태 표시
             saveBtn.disabled = true;
-            btnText.textContent = '저장 중...';
+            btnText.style.display = 'none';
             btnLoader.style.display = 'inline-block';
             
             try {
@@ -316,25 +276,21 @@
                     body: JSON.stringify({
                         examNumber: student.exam_number,
                         event: event,
-                        recordValue: parseFloat(recordValue)
+                        recordValue: recordValue
                     })
                 });
-                
                 const result = await response.json();
-                
                 if (result.success) {
                     showToast('기록이 저장되었습니다');
-                    loadStudents(); // 학생 목록 새로고침
+                    loadStudents();
                 } else {
                     showToast(result.message || '저장에 실패했습니다');
                 }
             } catch (error) {
                 showToast('네트워크 오류가 발생했습니다');
-                console.error('저장 실패:', error);
             } finally {
-                // 로딩 상태 해제
                 saveBtn.disabled = false;
-                btnText.textContent = '기록 저장';
+                btnText.style.display = 'inline-block';
                 btnLoader.style.display = 'none';
             }
         }
