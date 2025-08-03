@@ -18,7 +18,25 @@
             margin: 0; padding: 24px; background-color: #f0f2f5; color: var(--dark);
         }
         .container { max-width: 1400px; margin: auto; }
-        h1 { text-align: center; font-size: 2rem; font-weight: 800; margin-bottom: 24px; color: var(--dark); }
+        h1 { text-align: center; font-size: 2rem; font-weight: 800; margin-bottom: 16px; color: var(--dark); }
+        /* ⭐️ 버튼을 담을 툴바 스타일 추가 ⭐️ */
+        .toolbar {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .toolbar a {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: var(--secondary);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .toolbar a:hover {
+            background-color: #5a6268;
+        }
         .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
         .card { background-color: white; padding: 24px; border-radius: 16px; box-shadow: var(--shadow); }
         .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
@@ -26,36 +44,15 @@
         .card-header svg { width: 28px; height: 28px; }
         .attendance-info { font-size: 1.2rem; font-weight: 500; text-align: center; margin-bottom: 24px; }
         .attendance-info .count { font-size: 2rem; font-weight: 700; color: var(--primary); }
-        
-        /* ⭐️ 카드형 진행도 스타일 ⭐️ */
-        .progress-card-grid {
-            display: grid;
-            grid-template-columns: 1fr; /* 전체 진행도는 한 줄을 다 씀 */
-            gap: 16px;
-        }
-        .progress-card {
-            background-color: var(--light);
-            padding: 16px;
-            border-radius: 12px;
-        }
-        .progress-card.overall { /* 전체 진행도 카드 스타일 */
-            background-color: var(--primary);
-            color: white;
-        }
-        .progress-card.overall .progress-item label span,
-        .progress-card.overall .progress-item .progress-label {
-            color: white;
-            opacity: 0.9;
-        }
-        .progress-card.overall .progress-bar {
-            background-color: rgba(255, 255, 255, 0.3);
-        }
-
+        .progress-card-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+        .progress-card { background-color: var(--light); padding: 16px; border-radius: 12px; }
+        .progress-card.overall { background-color: var(--primary); color: white; }
+        .progress-card.overall .progress-item label span, .progress-card.overall .progress-label { color: white; opacity: 0.9; }
+        .progress-card.overall .progress-bar { background-color: rgba(255, 255, 255, 0.3); }
         .progress-item label { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 8px; font-size: 1rem; }
         .progress-label { color: var(--secondary); font-size: 0.9rem; }
         .progress-bar { background-color: #e9ecef; border-radius: 8px; height: 10px; overflow: hidden; }
         .progress-bar-fill { height: 100%; width: 0%; transition: width 0.5s ease-in-out; border-radius: 8px; }
-        
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 16px; border-bottom: 1px solid #dee2e6; text-align: center; }
         thead th { background-color: var(--light); color: var(--secondary); font-size: 0.8rem; letter-spacing: 0.5px; }
@@ -67,29 +64,31 @@
 <body>
     <div class="container">
         <h1>슈퍼맥스 12 대시보드</h1>
+        <div class="toolbar">
+            <a href="./pre-event-dashboard.html" target="_blank">사전 현황판 바로가기 &rarr;</a>
+        </div>
+
         <div class="dashboard-grid">
             <div class="card">
                 <div class="card-header">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m4.93 19.07 1.41-1.41"></path><path d="m17.66 6.34 1.41-1.41"></path></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m4.93 19.07 1.41-1.41"></path><path d="m17.66 6.34 1.41-1.41"></path></svg>
                     <h2>오전조 진행 현황</h2>
                 </div>
                 <div id="morning-attendance" class="attendance-info"><span class="count">0</span> / 0 명 참석</div>
                 <div id="morning-progress-cards" class="progress-card-grid"></div>
             </div>
-            
             <div class="card">
                 <div class="card-header">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
                     <h2>오후조 진행 현황</h2>
                 </div>
                 <div id="afternoon-attendance" class="attendance-info"><span class="count">0</span> / 0 명 참석</div>
                 <div id="afternoon-progress-cards" class="progress-card-grid"></div>
             </div>
         </div>
-
         <div class="card">
              <div class="card-header">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                 <h2>기록 오류 목록</h2>
             </div>
             <table>
