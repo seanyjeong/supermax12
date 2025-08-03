@@ -28,6 +28,10 @@
         .close-btn { font-size: 2rem; font-weight: bold; color: #aaa; cursor: pointer; }
         .pending-list { list-style-type: decimal; padding-left: 20px; }
         .pending-list li { padding: 5px 0; }
+        .branch-card.completed {
+    background-color: #ade7fd; /* 연한 녹색 */
+    border-color: #192987;
+}
 
         @media (max-width: 992px) { .session-container { grid-template-columns: 1fr; } }
     </style>
@@ -64,39 +68,41 @@
         const modal = document.getElementById('pending-modal');
 
         async function loadBranchStatus() {
-            try {
-                const response = await fetch(`${API_URL}/26susi/dashboard/pre-event`);
-                const result = await response.json();
-                if (result.success) {
-                    const morningContainer = document.getElementById('morning-cards');
-                    const afternoonContainer = document.getElementById('afternoon-cards');
-                    let morningHtml = '', afternoonHtml = '';
+    try {
+        const response = await fetch(`${API_URL}/26susi/dashboard/pre-event`);
+        const result = await response.json();
+        if (result.success) {
+            const morningContainer = document.getElementById('morning-cards');
+            const afternoonContainer = document.getElementById('afternoon-cards');
+            let morningHtml = '', afternoonHtml = '';
 
-                    result.data.forEach(item => {
-                        // ⭐️ 카드 div에 onclick 이벤트 추가
-                        const cardHtml = `
-                            <div class="branch-card" onclick="showPendingStudents('${item.branch_name}')">
-                                <h3>${item.branch_name}</h3>
-                                <ul class="stats-list">
-                                    <li><span>미확인</span> <span>${item.pending} 명</span></li>
-                                    <li><span>참석</span> <span>${item.present} 명</span></li>
-                                    <li><span>결석</span> <span>${item.absent} 명</span></li>
-                                    <li><span>대체</span> <span>${item.substitute} 명</span></li>
-                                    <li><span>신규</span> <span>${item.new_count} 명</span></li>
-                                </ul>
-                            </div>
-                        `;
-                        if (오전조.includes(item.branch_name)) {
-                            morningHtml += cardHtml;
-                        } else {
-                            afternoonHtml += cardHtml;
-                        }
-                    });
-                    morningContainer.innerHTML = morningHtml || '<p>데이터가 없습니다.</p>';
-                    afternoonContainer.innerHTML = afternoonHtml || '<p>데이터가 없습니다.</p>';
+            result.data.forEach(item => {
+                // ⭐️ 미확인 인원(item.pending)이 0이면 'completed' 클래스 추가
+                const cardClass = (item.pending === 0) ? 'branch-card completed' : 'branch-card';
+
+                const cardHtml = `
+                    <div class="${cardClass}" onclick="showPendingStudents('${item.branch_name}')">
+                        <h3>${item.branch_name}</h3>
+                        <ul class="stats-list">
+                            <li><span>미확인</span> <span>${item.pending} 명</span></li>
+                            <li><span>참석</span> <span>${item.present} 명</span></li>
+                            <li><span>결석</span> <span>${item.absent} 명</span></li>
+                            <li><span>대체</span> <span>${item.substitute} 명</span></li>
+                            <li><span>신규</span> <span>${item.new_count} 명</span></li>
+                        </ul>
+                    </div>
+                `;
+                if (오전조.includes(item.branch_name)) {
+                    morningHtml += cardHtml;
+                } else {
+                    afternoonHtml += cardHtml;
                 }
-            } catch (error) { console.error("사전 현황판 로딩 오류:", error); }
+            });
+            morningContainer.innerHTML = morningHtml || '<p>데이터가 없습니다.</p>';
+            afternoonContainer.innerHTML = afternoonHtml || '<p>데이터가 없습니다.</p>';
         }
+    } catch (error) { console.error("사전 현황판 로딩 오류:", error); }
+}
         
         // ⭐️ 모달을 보여주는 함수 (신규 추가)
         async function showPendingStudents(branchName) {
