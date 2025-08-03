@@ -7,6 +7,19 @@
         .container { max-width: 1200px; margin: auto; }
         h1 { text-align: center; }
         .card { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .filter-toolbar {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .filter-toolbar label { font-weight: 500; }
+        /* ⭐️ 요약 정보 스타일 추가 ⭐️ */
+        .summary-text {
+            font-size: 0.9em;
+            color: #6c757d;
+            font-weight: 500;
+        }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: center; }
         th { background-color: #f8f9fa; font-weight: 600; }
@@ -22,6 +35,13 @@
     <div class="container">
         <h1>신규/교환 티셔츠 관리</h1>
         <div class="card">
+            <div class="filter-toolbar">
+                <label for="branch-filter">교육원 필터:</label>
+                <select id="branch-filter" onchange="filterTable()">
+                    <option value="all">전체 보기</option>
+                </select>
+                <span id="tshirt-summary" class="summary-text"></span>
+            </div>
             <table>
                 <thead>
                     <tr>
@@ -38,61 +58,93 @@
     <script>
         const API_URL = 'https://supermax.kr';
         const SIZES = ['S', 'M', 'L', 'XL', '2XL', '3XL'];
+        let allTshirtData = [];
 
         async function loadTshirts() {
             try {
                 const response = await fetch(`${API_URL}/26susi/tshirts`);
                 const result = await response.json();
-                const tbody = document.getElementById('tshirt-table');
+                if (!result.success) return;
                 
-                if (!result.success || result.data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="8">관리할 티셔츠 목록이 없습니다.</td></tr>`;
-                    return;
-                }
-
-                let rows = '';
-                result.data.forEach(item => {
-                    const isExchange = item.type === '교환';
-                    const sizeOptions = SIZES.map(s => `<option value="${s}">${s}</option>`).join('');
-                    const statusOptions = `<option value="대기">대기</option><option value="완료">완료</option>`;
-                    const isComplete = item.status === '완료';
-
-                    rows += `
-                        <tr class="${isComplete ? 'status-complete' : ''}" id="row-${item.id}">
-                            <td class="${isExchange ? 'type-exchange' : 'type-new'}">${item.type}</td>
-                            <td>${item.branch_name}</td>
-                            <td>${item.student_name}</td>
-                            <td>${item.exam_number || '-'}</td>
-                            <td>
-                                <select id="original-size-${item.id}" ${!isExchange ? 'disabled' : ''}>
-                                    <option value="">-</option>
-                                    ${sizeOptions}
-                                </select>
-                            </td>
-                            <td><select id="new-size-${item.id}"><option value="">선택</option>${sizeOptions}</select></td>
-                            <td><select id="status-${item.id}">${statusOptions}</select></td>
-                            <td><button onclick="saveTshirt(${item.id})">저장</button></td>
-                        </tr>
-                    `;
-                });
-                tbody.innerHTML = rows;
-
-                // 저장된 값으로 select box 초기화
-                result.data.forEach(item => {
-                    if (item.original_size) document.getElementById(`original-size-${item.id}`).value = item.original_size;
-                    if (item.new_size) document.getElementById(`new-size-${item.id}`).value = item.new_size;
-                    if (item.status) document.getElementById(`status-${item.id}`).value = item.status;
-                });
+                allTshirtData = result.data;
+                populateFilter();
+                renderTable(allTshirtData);
+                
             } catch (error) {
                 document.getElementById('tshirt-table').innerHTML = `<tr><td colspan="8">데이터 로딩 중 오류가 발생했습니다.</td></tr>`;
             }
+        }
+        
+        function populateFilter() {
+            const branchFilter = document.getElementById('branch-filter');
+            const branches = [...new Set(allTshirtData.map(item => item.branch_name))];
+            branches.sort();
+            branches.forEach(branch => {
+                branchFilter.innerHTML += `<option value="${branch}">${branch}</option>`;
+            });
+        }
+
+        function filterTable() {
+            const selectedBranch = document.getElementById('branch-filter').value;
+            const dataToShow = (selectedBranch === 'all')
+                ? allTshirtData
+                : allTshirtData.filter(item => item.branch_name === selectedBranch);
+            renderTable(dataToShow);
+        }
+
+        // ⭐️ 카운트 로직을 이 함수 안에 통합 ⭐️
+        function renderTable(data) {
+            const tbody = document.getElementById('tshirt-table');
+            const summarySpan = document.getElementById('tshirt-summary');
+
+            // 1. 카운트 계산
+            let newCount = 0;
+            let exchangeCount = 0;
+            data.forEach(item => {
+                if (item.type === '신규') newCount++;
+                else if (item.type === '교환') exchangeCount++;
+            });
+            summarySpan.textContent = `신규: ${newCount}건 | 교환: ${exchangeCount}건`;
+            
+            // 2. 테이블 렌더링
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8">해당 조건의 목록이 없습니다.</td></tr>`;
+                return;
+            }
+            let rows = '';
+            data.forEach(item => {
+                const isExchange = item.type === '교환';
+                const sizeOptions = SIZES.map(s => `<option value="${s}">${s}</option>`).join('');
+                const statusOptions = `<option value="대기">대기</option><option value="완료">완료</option>`;
+                const isComplete = item.status === '완료';
+
+                rows += `
+                    <tr class="${isComplete ? 'status-complete' : ''}" id="row-${item.id}">
+                        <td class="${isExchange ? 'type-exchange' : 'type-new'}">${item.type}</td>
+                        <td>${item.branch_name}</td>
+                        <td>${item.student_name}</td>
+                        <td>${item.exam_number || '-'}</td>
+                        <td><select id="original-size-${item.id}" ${!isExchange ? 'disabled' : ''}><option value="">-</option>${sizeOptions}</select></td>
+                        <td><select id="new-size-${item.id}"><option value="">선택</option>${sizeOptions}</select></td>
+                        <td><select id="status-${item.id}">${statusOptions}</select></td>
+                        <td><button onclick="saveTshirt(${item.id})">저장</button></td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = rows;
+
+            // 3. 저장된 값으로 select box 초기화
+            data.forEach(item => {
+                if (item.original_size) document.getElementById(`original-size-${item.id}`).value = item.original_size;
+                if (item.new_size) document.getElementById(`new-size-${item.id}`).value = item.new_size;
+                if (item.status) document.getElementById(`status-${item.id}`).value = item.status;
+            });
         }
 
         async function saveTshirt(id) {
             const original_size = document.getElementById(`original-size-${id}`).value || null;
             const new_size = document.getElementById(`new-size-${id}`).value || null;
             const status = document.getElementById(`status-${id}`).value;
-
             try {
                 const response = await fetch(`${API_URL}/26susi/tshirts/${id}`, {
                     method: 'PATCH',
@@ -102,7 +154,6 @@
                 const result = await response.json();
                 alert(result.message);
                 if (result.success) {
-                    // 저장 성공 시 해당 행의 스타일 업데이트
                     const row = document.getElementById(`row-${id}`);
                     if (status === '완료') {
                         row.classList.add('status-complete');
