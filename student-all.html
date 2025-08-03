@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <title>마스터 학생 일괄 등록</title>
+    <script src="https://cdn.jsdelivr.net/npm/handsontable@12/dist/handsontable.full.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/handsontable@12/dist/handsontable.full.min.css" rel="stylesheet">
+    
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .container { max-width: 800px; margin: auto; }
+        h1 { text-align: center; }
+        .form-section { border: 1px solid #ccc; padding: 20px; border-radius: 8px; }
+        button { font-size: 1.2em; padding: 15px 30px; cursor: pointer; color: white; border: none; border-radius: 8px; margin-top: 15px; background-color: #28a745; }
+        .instructions { font-size: 0.9em; color: #666; margin-bottom: 10px; }
+        #spreadsheet { width: 100%; height: 500px; overflow: hidden; } 
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>마스터 학생 일괄 등록</h1>
+        
+        <div class="form-section">
+            <div class="instructions">
+                💡 엑셀에서 **교육원, 이름, 성별, 학교, 학년** 순서로 복사해서 첫 번째 셀에 붙여넣으세요.
+            </div>
+            <div id="spreadsheet"></div>
+            <button onclick="addStudentsInBulk()">전체 명단 일괄 등록하기</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://supermax.kr';
+        const container = document.getElementById('spreadsheet');
+        // ⭐️ 행 개수를 넉넉하게 3000개로 설정
+        const hot = new Handsontable(container, {
+            data: Handsontable.helper.createEmptySpreadsheetData(3000, 5),
+            colHeaders: ['교육원', '이름', '성별', '학교', '학년'],
+            columns: [
+                {}, // 교육원
+                {}, // 이름
+                { type: 'dropdown', source: ['남', '여'] }, // 성별
+                {}, // 학교
+                {}  // 학년
+            ],
+            rowHeaders: true,
+            colWidths: [150, 100, 80, 150, 100],
+            height: 500, // 고정 높이를 주어 성능 확보
+            licenseKey: 'non-commercial-and-evaluation'
+        });
+
+// master-register.html의 스크립트
+// master-register.html의 스크립트
+// master-register.html의 스크립트
+async function addStudentsInBulk() {
+    const allGridData = hot.getData();
+    const pastedData = allGridData.filter((row, index) => !hot.isEmptyRow(index));
+
+    if (pastedData.length === 0) {
+        return alert('등록할 데이터가 없습니다.');
+    }
+
+    // ⭐️ 이 부분을 추가해서 에러를 해결합니다.
+    let invalidRowsByBranch = {};
+    let invalidRowCount = 0;
+
+    const cleanedData = pastedData.map(row => {
+        return row.map(cell => (typeof cell === 'string' ? cell.trim() : cell));
+    });
+
+    const validStudents = cleanedData.map((row, index) => {
+        const student = { branch: row[0], name: row[1], gender: row[2], school: row[3], grade: row[4] };
+        
+        const missingFields = [];
+        if (!student.branch) missingFields.push('교육원');
+        if (!student.name) missingFields.push('이름');
+        if (!['남', '여'].includes(student.gender)) missingFields.push('성별');
+        if (!student.grade) missingFields.push('학년');
+
+        if (missingFields.length === 0) {
+            return student;
+        } else {
+            const branchName = student.branch || '[교육원 이름 없음]';
+            if (!invalidRowsByBranch[branchName]) {
+                invalidRowsByBranch[branchName] = [];
+            }
+            invalidRowsByBranch[branchName].push(`- ${index + 1}번째 줄 (누락: ${missingFields.join(', ')})`);
+            invalidRowCount++;
+            return null;
+        }
+    }).filter(s => s !== null);
+
+    if (invalidRowCount > 0) {
+        let message = `붙여넣은 ${pastedData.length}명 중 ${invalidRowCount}명의 데이터에 문제가 있습니다.\n\n[누락 의심 데이터 상세]\n`;
+        for (const branch in invalidRowsByBranch) {
+            message += `▶ ${branch}\n${invalidRowsByBranch[branch].join('\n')}\n\n`;
+        }
+        message += `문제가 있는 데이터를 제외하고 ${validStudents.length}명만 등록을 계속할까요?`;
+
+        if (!confirm(message)) {
+            return;
+        }
+    } else {
+        if (!confirm(`총 ${validStudents.length}명의 학생을 등록할까요?`)) return;
+    }
+    
+    // 이하 분할 전송 로직은 이전과 동일합니다.
+    const chunkSize = 500;
+    const totalChunks = Math.ceil(validStudents.length / chunkSize);
+    let successCount = 0;
+
+    for (let i = 0; i < totalChunks; i++) {
+        const chunk = validStudents.slice(i * chunkSize, (i + 1) * chunkSize);
+        alert(`데이터 분할 전송 (${i + 1}/${totalChunks}) - ${chunk.length}명 전송 시작`);
+        try {
+            const response = await fetch(`${API_URL}/26susi/students/master-bulk`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ students: chunk })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || `서버 에러: ${response.status}`);
+            if (result.insertedCount) {
+                successCount += result.insertedCount;
+            }
+        } catch (error) {
+            alert(`전송 중 오류 발생: ${error.message}\n지금까지 ${successCount}명이 등록되었습니다.`);
+            return;
+        }
+    }
+    alert(`총 ${successCount}명의 학생 등록을 성공적으로 완료했습니다!`);
+    hot.loadData(Handsontable.helper.createEmptySpreadsheetData(3000, 5));
+}
+    </script>
+</body>
+</html>

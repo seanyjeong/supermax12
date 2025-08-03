@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>현장 학생 관리</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 15px; background-color: #f4f4f8; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .search-box { display: flex; margin-bottom: 20px; }
+        .search-box input { flex-grow: 1; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; }
+        .action-button { display: block; width: 100%; padding: 15px; font-size: 1.1rem; color: white; background-color: #28a745; border: none; border-radius: 8px; margin-bottom: 20px; cursor: pointer; }
+        .student-list { padding: 0; margin: 0; }
+        .student-list li { list-style: none; background-color: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .student-info { margin-bottom: 10px; line-height: 1.5; }
+        .student-info strong { font-size: 1.2rem; }
+        .student-info span { color: #555; font-size: 0.9rem; }
+        .student-actions button { padding: 10px 15px; margin-right: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-present { background-color: #28a745; color: white; }
+        .btn-absent { background-color: #ffc107; }
+        .btn-substitute { background-color: #dc3545; color: white; }
+        .status-board {
+            display: flex;
+            justify-content: space-around;
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .status-item { flex: 1; }
+        .status-item h3 { margin: 0 0 5px 0; font-size: 0.9rem; color: #6c757d; }
+        .status-item p { margin: 0; font-size: 1.2rem; font-weight: bold; }
+        .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fefefe; margin: 25% auto; padding: 20px; border: 1px solid #888; width: 85%; max-width: 400px; border-radius: 8px; }
+        .modal-content input, .modal-content select { width: 95%; padding: 12px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 5px; }
+        .modal-actions button { width: 48%; padding: 12px; }
+    </style>
+</head>
+<body>
+    <div id="login-screen">
+        <h1 class="header">지점 로그인</h1>
+        <input type="password" id="passwordInput" placeholder="비밀번호" style="width: 95%; padding: 12px; margin-bottom: 10px;">
+        <button onclick="handleLogin()" class="action-button" style="background-color: #007bff;">로그인</button>
+    </div>
+
+    <div id="main-content" style="display: none;">
+        <div class="header">
+            <h1 id="branchName"></h1>
+            
+        </div>
+
+        <div class="status-board">
+            <div class="status-item"><h3>총원</h3><p id="total-count">0</p></div>
+            <div class="status-item"><h3>참석</h3><p id="present-count">0</p></div>
+            <div class="status-item"><h3>결석</h3><p id="absent-count">0</p></div>
+            <div class="status-item"><h3>미정</h3><p id="pending-count">0</p></div>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" onkeyup="filterStudents()" placeholder="이름 또는 수험번호로 검색...">
+        </div>
+
+        <button class="action-button" onclick="openNewStudentModal()">현장 신규 추가</button>
+        <ul class="student-list" id="studentList"></ul>
+    </div>
+
+    <div id="substituteModal" class="modal">
+        <div class="modal-content">
+            <h2>대체 학생 정보 입력</h2>
+            <input type="hidden" id="oldStudentId">
+            <input type="text" id="sub_name" placeholder="이름">
+            <select id="sub_gender"><option value="남">남자</option><option value="여">여자</option></select>
+            <input type="text" id="sub_school" placeholder="학교">
+            <input type="text" id="sub_grade" placeholder="학년">
+            <div class="modal-actions">
+                <button onclick="submitSubstitute()" style="background-color: #dc3545; color: white;">대체 완료</button>
+                <button onclick="closeModal()" style="background-color: #6c757d;">취소</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="newStudentModal" class="modal">
+        <div class="modal-content">
+            <h2>신규 학생 정보 입력</h2>
+            <input type="text" id="new_name" placeholder="이름">
+            <select id="new_gender"><option value="남">남자</option><option value="여">여자</option></select>
+            <input type="text" id="new_school" placeholder="학교">
+            <input type="text" id="new_grade" placeholder="학년">
+            <div class="modal-actions">
+                <button onclick="submitNewStudent()" style="background-color: #28a745; color: white;">신규 등록</button>
+                <button onclick="closeModal()" style="background-color: #6c757d;">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 전역 변수 및 설정 ---
+        const API_URL = 'https://supermax.kr';
+        let currentBranch = ''; 
+        let currentBranchDisplay = '';
+        let allStudents = [];
+        const 오전조 = ['대전','강남','강동','광주','군포','논산','동탄','분당','서초','세종','수원','순천여수광양','아산','영통','용인','이천','익산','전주','군산','천안','청주','충주','하남','경산'];
+
+        // --- 로그인 및 데이터 관리 ---
+        function handleLogin() {
+            const password = document.getElementById('passwordInput').value;
+            const branchPasswords = { '6765': '일산', '6764': '강남' /* 다른 지점 추가 */ };
+            const branchName = branchPasswords[password];
+
+            if (branchName) {
+                currentBranch = branchName;
+                currentBranchDisplay = `${branchName} 교육원`;
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+                document.getElementById('branchName').textContent = currentBranchDisplay;
+                fetchAllStudents();
+            } else { 
+                alert('비밀번호가 올바르지 않습니다.'); 
+            }
+        }
+        
+        async function fetchAllStudents() {
+            if (!currentBranch) return;
+            try {
+                const response = await fetch(`${API_URL}/26susi/students?branchName=${encodeURIComponent(currentBranch)}`);
+                const result = await response.json();
+                if (result.success) {
+                    allStudents = result.data;
+                    allStudents.sort((a, b) => a.student_name.localeCompare(b.student_name));
+                    
+                    updateStatusBoard(allStudents);
+                    renderList(allStudents);
+                } else {
+                    alert('학생 목록 로딩 실패: ' + result.message);
+                }
+            } catch (error) {
+                alert('서버와 통신 중 오류가 발생했습니다.');
+            }
+        }
+
+        function updateStatusBoard(students) {
+            const total = students.length;
+            const present = students.filter(s => s.attendance === '참석').length;
+            const absent = students.filter(s => s.attendance === '결석').length;
+            const pending = students.filter(s => s.attendance === '미정' || !s.attendance).length;
+
+            document.getElementById('total-count').textContent = total;
+            document.getElementById('present-count').textContent = present;
+            document.getElementById('absent-count').textContent = absent;
+            document.getElementById('pending-count').textContent = pending;
+        }
+
+        function renderList(students) {
+            const listEl = document.getElementById('studentList');
+            listEl.innerHTML = '';
+            students.forEach(s => {
+                const item = document.createElement('li');
+                item.dataset.studentId = s.id;
+                item.innerHTML = `
+                    <div class="student-info">
+                        <strong>${s.student_name}</strong> (${s.exam_number || '미배정'})<br>
+                        <span>${s.school || '학교 정보 없음'} | ${s.grade || '학년 정보 없음'}</span><br>
+                        <span style="color: #dc3545; font-weight: bold;">출결: ${s.attendance || '미정'} | 등록: ${s.status || '정상'}</span>
+                    </div>
+                    <div class="student-actions">
+                        <button class="btn-present" onclick="markPresent(${s.id})">참석</button>
+                        <button class="btn-absent" onclick="markAbsent(${s.id})">결석</button>
+                        <button class="btn-substitute" onclick="openSubstituteModal(${s.id})">대체</button>
+                    </div>
+                `;
+                listEl.appendChild(item);
+            });
+        }
+        
+        function filterStudents() {
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allStudents.filter(s => 
+                s.student_name.toLowerCase().includes(keyword) || 
+                (s.exam_number && s.exam_number.toLowerCase().includes(keyword))
+            );
+            renderList(filtered);
+        }
+
+        // --- 출결 및 등록 관리 ---
+        async function markPresent(studentId) {
+            const response = await fetch(`${API_URL}/26susi/attendance/present/${studentId}`, { method: 'PATCH' });
+            const result = await response.json();
+            if (result.success) fetchAllStudents();
+        }
+
+        async function markAbsent(studentId) {
+            const response = await fetch(`${API_URL}/26susi/attendance/absent/${studentId}`, { method: 'PATCH' });
+            const result = await response.json();
+            if (result.success) fetchAllStudents();
+        }
+        
+        async function submitSubstitute() {
+            const oldStudentId = document.getElementById('oldStudentId').value;
+            const newStudent = {
+                name: document.getElementById('sub_name').value,
+                gender: document.getElementById('sub_gender').value,
+                school: document.getElementById('sub_school').value,
+                grade: document.getElementById('sub_grade').value,
+            };
+            if(!newStudent.name || !newStudent.gender) return alert('이름과 성별은 필수입니다.');
+
+            const response = await fetch(`${API_URL}/26susi/students/substitute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ oldStudentId, newStudent })
+            });
+            const result = await response.json();
+            alert(result.message);
+            if (result.success) {
+                closeModal();
+                fetchAllStudents();
+            }
+        }
+
+        async function submitNewStudent() {
+            const session = 오전조.includes(currentBranch) ? '오전' : '오후';
+            const newStudent = {
+                name: document.getElementById('new_name').value,
+                gender: document.getElementById('new_gender').value,
+                school: document.getElementById('new_school').value,
+                grade: document.getElementById('new_grade').value,
+                branchName: currentBranch
+            };
+            if(!newStudent.name || !newStudent.gender) return alert('이름과 성별은 필수입니다.');
+            
+            const response = await fetch(`${API_URL}/26susi/students/add-new`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session, newStudent })
+            });
+            const result = await response.json();
+            alert(result.message);
+            if (result.success) {
+                closeModal();
+                fetchAllStudents();
+            }
+        }
+        
+        // --- 모달 관리 ---
+        function openSubstituteModal(studentId) {
+            document.getElementById('oldStudentId').value = studentId;
+            document.getElementById('substituteModal').style.display = 'block';
+        }
+        
+        function openNewStudentModal() {
+            document.getElementById('newStudentModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('substituteModal').style.display = 'none';
+            document.getElementById('newStudentModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

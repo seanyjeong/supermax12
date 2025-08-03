@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>운영자 조 배정</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .container { max-width: 900px; margin: auto; }
+        h1 { text-align: center; }
+        .action-section, .list-section { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
+        button { font-size: 1.2em; padding: 15px 30px; cursor: pointer; color: white; border: none; border-radius: 8px; margin: 5px;}
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #f2f2f2; }
+        .group-summary {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            font-size: 0.9em;
+            color: #495057;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>운영자 페이지</h1>
+        
+        <div class="action-section">
+            <h2>학생 조 관리</h2>
+            <button onclick="assignAllGroups()" style="background-color: #007bff;">조 배정 실행</button>
+            <button onclick="reassignAllGroups()" style="background-color: #dc3545;">전체 재배치 실행</button>
+        </div>
+
+        <div class="list-section">
+            <h2>전체 학생 명단</h2>
+            <div id="group-summary" class="group-summary">조별 인원 로딩 중...</div>
+            <button onclick="fetchAllStudents()" style="font-size: 1em; padding: 10px 20px; background-color: #6c757d;">새로고침</button>
+            <table>
+                <thead>
+                    <tr>
+                        <th>지점</th>
+                        <th>이름</th>
+                        <th>조</th>
+                        <th>수험번호</th>
+                    </tr>
+                </thead>
+                <tbody id="student-list"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://supermax.kr';
+
+        // '조 배정 실행' 버튼 함수: 조가 없는 학생만 대상
+        async function assignAllGroups() {
+            if (!confirm('조가 없는 모든 학생들에게 조를 배정할까요?')) return;
+            try {
+                const response = await fetch(`${API_URL}/26susi/assign-all-groups`, { method: 'POST' });
+                const result = await response.json();
+                alert(result.message);
+                if (result.success) {
+                    fetchAllStudents();
+                }
+            } catch (error) {
+                alert('요청 처리 중 오류가 발생했습니다. 서버 상태를 확인해주세요.');
+                console.error('Error during assignAllGroups:', error);
+            }
+        }
+
+        // '전체 재배치 실행' 버튼 함수: 모든 학생 초기화 후 재배정
+        async function reassignAllGroups() {
+            if (!confirm('⚠️ 경고! 모든 학생의 조와 수험번호가 초기화된 후, 처음부터 다시 배정됩니다. 정말로 실행할까요?')) return;
+            try {
+                const response = await fetch(`${API_URL}/26susi/reassign-all-groups`, { method: 'POST' });
+                const result = await response.json();
+                alert(result.message);
+                if (result.success) {
+                    fetchAllStudents();
+                }
+            } catch (error) {
+                alert('요청 처리 중 오류가 발생했습니다. 서버 상태를 확인해주세요.');
+                console.error('Error during reassignAllGroups:', error);
+            }
+        }
+
+        // 학생 목록 불러오는 함수 (조별 인원 카운트 기능 포함)
+        async function fetchAllStudents() {
+            try {
+                const response = await fetch(`${API_URL}/26susi/students?view=all`);
+                const result = await response.json();
+                
+                if (!result.success) {
+                    return alert('학생 정보 로딩 실패: ' + result.message);
+                }
+                
+                const tbody = document.getElementById('student-list');
+                const summaryDiv = document.getElementById('group-summary');
+                
+                // 조별 인원수 계산 로직
+                const groupCounts = {};
+                let unassignedCount = 0;
+                result.data.forEach(s => {
+                    if (s.exam_group) {
+                        groupCounts[s.exam_group] = (groupCounts[s.exam_group] || 0) + 1;
+                    } else {
+                        unassignedCount++;
+                    }
+                });
+
+                // 계산된 인원수를 현황판에 표시
+                let summaryText = '';
+                Object.keys(groupCounts).sort().forEach(group => {
+                    summaryText += `${group}조: ${groupCounts[group]}명 | `;
+                });
+                if (unassignedCount > 0) {
+                    summaryText += `미배정: ${unassignedCount}명`;
+                }
+                if (summaryText.endsWith(' | ')) {
+                    summaryText = summaryText.slice(0, -3);
+                }
+                summaryDiv.textContent = summaryText || '배정된 학생이 없습니다.';
+
+                // 학생 목록을 표에 그리기 (정렬 로직은 백엔드에서 처리)
+                let htmlRows = '';
+                result.data.forEach(s => {
+                    const groupDisplay = s.exam_group ? `${s.exam_group}조` : '미배정';
+                    htmlRows += `<tr>
+                        <td>${s.branch_name || '미배정'}</td>
+                        <td>${s.student_name}</td>
+                        <td>${groupDisplay}</td>
+                        <td>${s.exam_number || '미배정'}</td>
+                    </tr>`;
+                });
+                tbody.innerHTML = htmlRows;
+
+            } catch (error) {
+                alert('학생 목록을 불러오는 중 오류가 발생했습니다. 서버 상태를 확인해주세요.');
+                console.error('Error during fetchAllStudents:', error);
+            }
+        }
+        
+        // 페이지가 로드되면 바로 전체 학생 목록을 불러옴
+        window.onload = fetchAllStudents;
+    </script>
+</body>
+</html>
