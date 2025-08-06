@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>실시간 순위 시스템</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-red: #D90429;
+            --dark-red: #A4021F;
+            --background-dark: #121212;
+            --card-bg: #222;
+            --text-light: #EDF2F4;
+            --text-secondary: #8D99AE;
+            --gold: #FFD700;
+            --silver: #C0C0C0;
+            --bronze: #CD7F32;
+        }
+
+        body { 
+            font-family: 'Noto Sans KR', 'Poppins', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--background-dark);
+            color: var(--text-light);
+        }
+
+        .container { max-width: 800px; margin: auto; }
+        
+        .logo-container { text-align: center; margin-bottom: 25px; padding: 10px 0; }
+        .logo-container img { max-width: 400px; height: auto; }
+
+        h1 { 
+            text-align: center;
+            margin-bottom: 25px;
+            line-height: 1.2;
+        }
+        h1 .subtitle {
+            display: block;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            letter-spacing: 1.5px;
+        }
+        h1 .maintitle {
+            display: block;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 800;
+            font-size: 2.5rem;
+            color: var(--primary-red);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .filters { display: flex; gap: 15px; margin-bottom: 30px; }
+        .filters select {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid var(--text-secondary);
+            border-radius: 8px;
+            font-size: 1rem;
+            background-color: var(--card-bg);
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .filters select:hover { border-color: var(--primary-red); }
+        .filters select:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(217, 4, 41, 0.4);
+        }
+        
+        #rankings-container { display: flex; flex-direction: column; gap: 12px; }
+
+        .rank-card {
+            display: flex;
+            align-items: center;
+            background: linear-gradient(90deg, var(--card-bg) 0%, #333 100%);
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-left: 5px solid var(--primary-red);
+        }
+        .rank-card:hover {
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 6px 20px rgba(217, 4, 41, 0.2);
+        }
+
+        .rank-number {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 800;
+            font-size: 2.2rem;
+            color: var(--text-secondary);
+            width: 80px;
+            text-align: center;
+        }
+        
+        /* ✅ 1. 포디움 효과 (그림자 추가) */
+        .rank-card.rank-1 { 
+            border-left-color: var(--gold); 
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+        }
+        .rank-card.rank-1 .rank-number { color: var(--gold); }
+
+        .rank-card.rank-2 { 
+            border-left-color: var(--silver);
+            box-shadow: 0 0 15px rgba(192, 192, 192, 0.2);
+        }
+        .rank-card.rank-2 .rank-number { color: var(--silver); }
+        
+        .rank-card.rank-3 { 
+            border-left-color: var(--bronze); 
+            box-shadow: 0 0 15px rgba(205, 127, 50, 0.2);
+        }
+        .rank-card.rank-3 .rank-number { color: var(--bronze); }
+
+        .student-icon { font-size: 2.5rem; color: var(--text-secondary); margin: 0 20px; }
+        .student-info { flex-grow: 1; display: flex; flex-direction: column; }
+        
+        /* ✅ 2. 폰트 계층 구조 개선 */
+        .student-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+        .student-id {
+            font-size: 0.85rem;
+            color: #A0A0A0;
+            text-transform: uppercase;
+        }
+
+        .student-score {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-red);
+            text-align: right;
+        }
+
+        .loading-text, .error-text { text-align: center; padding: 40px; font-size: 1.2rem; color: var(--text-secondary); }
+
+        /* ✅ 3. 등장 애니메이션 */
+        @keyframes fadeInSlide {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .fade-in {
+            /* animation-delay는 인라인 스타일로 적용 */
+            animation: fadeInSlide 0.5s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo-container">
+            <img src="https://github.com/seanyjeong/supermax12/blob/main/supermax12.png?raw=true" alt="슈퍼맥스12 로고">
+        </div>
+
+        <h1>
+          <span class="subtitle">Real-Time</span>
+          <span class="maintitle">Super-Ranking</span>
+        </h1>
+    
+        <div class="filters">
+            <select id="class-type" onchange="fetchRankings()">
+                <option value="선행반">선행반 (1,2학년)</option>
+                <option value="입시반">입시반 (3학년)</option>
+                <option value="N수반">N수반</option>
+            </select>
+            <select id="event" onchange="fetchRankings()">
+                <option value="종합">종합 순위</option>
+                <option value="제멀">제자리멀리뛰기</option>
+                <option value="10m">10m 왕복달리기</option>
+                <option value="메디신볼">메디신볼 던지기</option>
+                <option value="배근력">배근력</option>
+            </select>
+            <select id="gender" onchange="fetchRankings()">
+                <option value="남">남자</option>
+                <option value="여">여자</option>
+            </select>
+        </div>
+        
+        <div id="rankings-container"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://supermax.kr';
+
+        function formatRecord(event, recordValue) {
+            if (recordValue === null || recordValue === undefined) return '-';
+            const recordNum = parseFloat(recordValue);
+            switch (event) {
+                case '제멀': return `${recordNum.toFixed(0)} cm`;
+                case '메디신볼': return `${recordNum.toFixed(1)} m`;
+                case '10m': return `${recordNum.toFixed(1)} 초`;
+                case '배근력': return `${recordNum.toFixed(1)} kg`;
+                default: return recordValue;
+            }
+        }
+
+        async function fetchRankings() {
+            const classType = document.getElementById('class-type').value;
+            const event = document.getElementById('event').value;
+            const gender = document.getElementById('gender').value;
+            const container = document.getElementById('rankings-container');
+            container.innerHTML = `<div class="loading-text">로딩 중...</div>`;
+
+            try {
+                const response = await fetch(`${API_URL}/26susi/rankings?classType=${encodeURIComponent(classType)}&gender=${gender}&event=${event}`);
+                const result = await response.json();
+
+                if (!result.success || result.data.length === 0) {
+                    container.innerHTML = `<div class="error-text">해당 조건의 데이터가 없습니다.</div>`;
+                    return;
+                }
+
+                let htmlContent = '';
+                result.data.forEach((item, index) => {
+                    let rankClass = `rank-${item.ranking}`;
+                    if (item.ranking > 3) rankClass = ''; 
+                    
+                    const displayValue = (event === '종합')
+                        ? `${parseFloat(item.score).toFixed(1)}점`
+                        : formatRecord(event, item.record_value);
+
+                    // ✅ style 속성에 animation-delay 추가
+                    htmlContent += `
+                        <div class="rank-card ${rankClass} fade-in" style="animation-delay: ${index * 0.05}s;">
+                            <div class="rank-number">${item.ranking}</div>
+                            <div class="student-icon"><i class="fas fa-user-circle"></i></div>
+                            <div class="student-info">
+                                <span class="student-name">${item.student_name}</span>
+                                <span class="student-id">${item.exam_number || item.branch_name}</span>
+                            </div>
+                            <div class="student-score">${displayValue}</div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = htmlContent;
+            } catch (error) {
+                container.innerHTML = `<div class="error-text">데이터를 불러오는 중 오류가 발생했습니다.</div>`;
+            }
+        }
+        window.onload = fetchRankings;
+    </script>
+</body>
+</html>
