@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUPER RANKING | 실시간 순위</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-blue: #0056B8; /* 수원삼성의 대표 블루 */
+            --secondary-blue: #00A9FF; /* 강조색 */
+            --dark-blue: #002D62; /* 어두운 블루 */
+            --neon-blue: #00F3FF; /* 네온 효과 */
+            --background-dark: #0A1A2F;
+            --card-bg: rgba(16, 42, 87, 0.7);
+            --text-light: #F0F8FF;
+            --text-secondary: #A8C5FF;
+            --gold: #FFD700;
+            --silver: #C0C0C0;
+            --bronze: #CD7F32;
+            --neon-glow: 0 0 10px rgba(0, 243, 255, 0.5),
+                         0 0 20px rgba(0, 243, 255, 0.3);
+        }
+
+        body {
+            font-family: 'Noto Sans KR', 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-dark);
+            color: var(--text-light);
+            background-image:
+                linear-gradient(135deg, var(--dark-blue) 0%, var(--background-dark) 50%),
+                radial-gradient(circle at 20% 30%, rgba(0, 169, 255, 0.1) 0%, transparent 30%),
+                radial-gradient(circle at 80% 70%, rgba(0, 243, 255, 0.1) 0%, transparent 30%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .logo-container::after {
+            content: '';
+            display: block;
+            width: 60%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+            margin: 1rem auto 0;
+            opacity: 0.7;
+        }
+
+        .logo-container img {
+            max-width: 280px;
+            height: auto;
+            filter: drop-shadow(0 0 15px rgba(0, 169, 255, 0.5));
+        }
+
+        h1 {
+            text-align: center;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 800;
+            font-size: 3rem;
+            background: linear-gradient(90deg, var(--primary-blue), var(--neon-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin: 0 auto 2rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            position: relative;
+            display: block;
+            width: fit-content;
+            padding: 0 2rem;
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+        }
+
+        h1::before, h1::after {
+            content: '​';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--neon-blue);
+            font-size: 1.8rem;
+            filter: drop-shadow(0 0 5px rgba(0, 243, 255, 0.7));
+        }
+
+        h1::before { left: 0; }
+        h1::after { right: 0; }
+
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .filters select {
+            flex: 1;
+            min-width: 180px;
+            padding: 0.8rem 1.2rem;
+            border: 1px solid rgba(0, 169, 255, 0.3);
+            border-radius: 6px;
+            font-size: 1rem;
+            background-color: rgba(0, 45, 98, 0.5);
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .filters select:hover {
+            border-color: var(--neon-blue);
+            box-shadow: var(--neon-glow);
+        }
+
+        .filters select:focus {
+            outline: none;
+            border-color: var(--secondary-blue);
+            box-shadow: 0 0 15px rgba(0, 169, 255, 0.5);
+        }
+
+        #rankings-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .rank-card {
+            display: flex;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(0, 169, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .rank-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--primary-blue), var(--neon-blue));
+        }
+
+        .rank-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 45, 98, 0.5),
+                          var(--neon-glow);
+            border-color: var(--neon-blue);
+        }
+
+        .rank-number {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 800;
+            font-size: 2.5rem;
+            color: var(--text-secondary);
+            width: 80px;
+            text-align: center;
+            position: relative;
+        }
+
+        .rank-card.rank-1 .rank-number {
+            color: var(--gold);
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .rank-card.rank-2 .rank-number {
+            color: var(--silver);
+            text-shadow: 0 0 8px rgba(192, 192, 192, 0.4);
+        }
+
+        .rank-card.rank-3 .rank-number {
+            color: var(--bronze);
+            text-shadow: 0 0 6px rgba(205, 127, 50, 0.4);
+        }
+
+        .student-icon {
+            font-size: 2.5rem;
+            color: var(--text-secondary);
+            margin: 0 1.5rem;
+            position: relative;
+        }
+
+        .student-icon::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(0, 169, 255, 0.1);
+            z-index: -1;
+        }
+
+        .student-info {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .student-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-light);
+            margin-bottom: 0.3rem;
+            letter-spacing: 0.5px;
+        }
+
+        .student-id {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            opacity: 0.8;
+        }
+
+        .student-score {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--secondary-blue);
+            text-align: right;
+            min-width: 120px;
+            text-shadow: 0 0 8px rgba(0, 169, 255, 0.3);
+        }
+
+        .rank-card.rank-1 .student-score {
+            background: linear-gradient(90deg, var(--gold), #FFA500);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+        }
+
+        .rank-card.rank-2 .student-score {
+            background: linear-gradient(90deg, var(--silver), #E0E0E0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .rank-card.rank-3 .student-score {
+            background: linear-gradient(90deg, var(--bronze), #D2B48C);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .student-icon.male   { color: var(--text-secondary); }
+.student-icon.female { color: #ff5fa2; }  /* 연한 핑크 계열 */
+.student-icon.female::after {
+    background: rgba(255, 95, 162, 0.08); /* 핑크 계열 배경 */
+}
+
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem;
+            }
+
+            h1 {
+                font-size: 2.2rem;
+                padding: 0 1.5rem;
+            }
+
+            h1::before, h1::after {
+                font-size: 1.4rem;
+            }
+
+            .rank-card {
+                padding: 1.2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .filters select {
+                min-width: 100%;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+                letter-spacing: 1px;
+                padding: 0 1.2rem;
+            }
+
+            h1::before, h1::after {
+                font-size: 1.2rem;
+            }
+        }
+
+        /* 특별 애니메이션 효과 */
+        .rank-card.rank-1 {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo-container">
+            <img src="https://github.com/seanyjeong/supermax12/blob/main/supermax12.png?raw=true" alt="슈퍼맥스12 로고">
+        </div>
+
+        <h1>SUPER RANKING</h1>
+
+        <div class="filters">
+            <select id="class-type" onchange="fetchRankings()">
+                <option value="선행반">선행반 (1,2학년)</option>
+                <option value="입시반">입시반 (3학년)</option>
+                <option value="N수반">N수반</option>
+            </select>
+            <select id="event" onchange="fetchRankings()">
+                <option value="종합">종합 순위</option>
+                <option value="제멀">제자리멀리뛰기</option>
+                <option value="10m">10m 왕복달리기</option>
+                <option value="메디신볼">메디신볼 던지기</option>
+                <option value="배근력">배근력</option>
+            </select>
+            <select id="gender" onchange="fetchRankings()">
+                <option value="남">남자</option>
+                <option value="여">여자</option>
+            </select>
+        </div>
+
+        <div id="rankings-container">
+            </div>
+    </div>
+
+    <script>
+        // 동일한 JavaScript 코드 유지
+        const API_URL = 'https://supermax.kr';
+
+        function formatRecord(event, recordValue) {
+            if (recordValue === null || recordValue === undefined) return '-';
+            const recordNum = parseFloat(recordValue);
+            switch (event) {
+                case '제멀': return `${recordNum.toFixed(0)} cm`;
+                case '메디신볼': return `${recordNum.toFixed(1)} m`;
+                case '10m': return `${recordNum.toFixed(1)} 초`;
+                case '배근력': return `${recordNum.toFixed(1)} kg`;
+                default: return recordValue;
+            }
+        }
+
+        async function fetchRankings() {
+            const classType = document.getElementById('class-type').value;
+            const event = document.getElementById('event').value;
+            const gender = document.getElementById('gender').value;
+            const container = document.getElementById('rankings-container');
+            container.innerHTML = `<div class="loading-text">데이터 로드 중...</div>`;
+
+            try {
+                const response = await fetch(`${API_URL}/26susi/rankings?classType=${encodeURIComponent(classType)}&gender=${gender}&event=${event}`);
+                const result = await response.json();
+
+                if (!result.success || result.data.length === 0) {
+                    container.innerHTML = `<div class="error-text">데이터가 없습니다</div>`;
+                    return;
+                }
+
+                let htmlContent = '';
+                result.data.forEach(item => {
+                    let rankClass = `rank-${item.ranking}`;
+                    if (item.ranking > 3) rankClass = '';
+
+                    const displayValue = (event === '종합')
+                        ? `${parseFloat(item.score).toFixed(1)}점`
+                        : formatRecord(event, item.record_value);
+
+                        htmlContent += `
+        <div class="rank-card ${rankClass}">
+            <div class="rank-number">${item.ranking}</div>
+            <div class="student-icon ${gender === '여' ? 'female' : 'male'}"><i class="fas fa-running"></i></div>
+            <div class="student-info">
+                <span class="student-name">${item.student_name}</span>
+                <span class="student-id">${item.exam_number || item.branch_name}</span>
+            </div>
+            <div class="student-score">${displayValue}</div>
+        </div>
+    `;
+});
+                container.innerHTML = htmlContent;
+            } catch (error) {
+                container.innerHTML = `<div class="error-text">오류 발생</div>`;
+                console.error('Error:', error);
+            }
+        }
+
+        window.onload = fetchRankings;
+    </script>
+</body>
+</html>
