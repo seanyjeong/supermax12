@@ -317,6 +317,49 @@
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-5px); }
         }
+
+@media (max-width: 480px) {
+    .rank-card {
+        flex-direction: row !important;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 1rem 0.5rem;
+    }
+    .rank-number {
+        font-size: 1.3rem;
+        width: 2.5rem;
+        min-width: 2.5rem;
+        margin-right: 0.5rem;
+    }
+    .student-icon {
+        font-size: 1.6rem;
+        margin: 0 1.2rem 0 0.7rem;  /* 오른쪽 margin 넉넉하게! */
+    }
+    .student-info {
+        flex-direction: column;
+        align-items: flex-start;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+    .student-name {
+        font-size: 1.08rem;
+        word-break: keep-all;
+    }
+    .student-id {
+        font-size: 0.95rem;
+        margin-left: 0.1rem;
+        margin-top: 0.07rem;
+    }
+    .student-score {
+        font-size: 1.1rem;
+        min-width: 60px;
+        margin-left: 0.8rem;
+        text-align: right;
+    }
+}
+
+
+
     </style>
 </head>
 <body>
