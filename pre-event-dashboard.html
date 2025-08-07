@@ -3,37 +3,150 @@
 <head>
     <title>사전 현황판 (교육원별)</title>
     <style>
-        body { font-family: -apple-system, sans-serif; padding: 20px; background-color: #f4f4f8; }
-        .container { max-width: 1200px; margin: auto; }
-        h1 { text-align: center; }
-        .toolbar { margin-bottom: 20px; text-align: right; }
-        .toolbar a { padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; }
-        .session-container { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-        .session-column { background-color: #fff; padding: 24px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        .session-column h2 { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 16px; text-align: center; }
-        .branch-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
-        .branch-card { background-color: #f8f9fa; border-radius: 12px; padding: 16px; border: 1px solid #dee2e6; cursor: pointer; transition: all 0.2s; }
-        .branch-card:hover { transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .branch-card h3 { margin: 0 0 12px 0; font-size: 1.2rem; text-align: center; }
-        .stats-list { list-style: none; padding: 0; margin: 0; font-size: 0.9rem; }
-        .stats-list li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e9ecef; }
-        .stats-list li:last-child { border-bottom: none; }
-        .stats-list span:last-child { font-weight: 600; }
+        body { 
+            font-family: -apple-system, sans-serif; 
+            padding: 10px; 
+            background-color: #f4f4f8; 
+            margin: 0;
+        }
+        .container { 
+            max-width: 1600px; 
+            margin: auto; 
+        }
+        h1 { 
+            text-align: center; 
+            margin: 10px 0;
+            font-size: 1.5rem;
+        }
+        .toolbar { 
+            margin-bottom: 10px; 
+            text-align: center; 
+        }
+        .toolbar a { 
+            padding: 8px 15px; 
+            background-color: #007bff; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 5px;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .session-container { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 12px; 
+        }
+        .session-column { 
+            background-color: #fff; 
+            padding: 12px; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05); 
+        }
+        .session-column h2 { 
+            margin: 0 0 10px 0; 
+            padding-bottom: 8px; 
+            text-align: center; 
+            font-size: 1.2rem;
+            border-bottom: 1px solid #eee;
+        }
+        .branch-card-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+            gap: 10px; 
+        }
+        .branch-card { 
+            background-color: #f8f9fa; 
+            border-radius: 8px; 
+            padding: 10px; 
+            border: 1px solid #dee2e6; 
+            cursor: pointer; 
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        .branch-card:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        }
+        .branch-card h3 { 
+            margin: 0 0 8px 0; 
+            font-size: 1rem; 
+            text-align: center; 
+        }
+        .stats-list { 
+            list-style: none; 
+            padding: 0; 
+            margin: 0; 
+            font-size: 0.8rem; 
+        }
+        .stats-list li { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 4px 0; 
+        }
+        .stats-list li:not(:last-child) { 
+            border-bottom: 1px solid #e9ecef; 
+        }
+        .stats-list span:last-child { 
+            font-weight: 600; 
+        }
         
-        /* ⭐️ 모달 스타일 추가 ⭐️ */
-        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); }
-        .modal-content { background-color: #fff; margin: 15% auto; padding: 24px; border-radius: 16px; width: 90%; max-width: 500px; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #dee2e6; padding-bottom: 16px; margin-bottom: 16px; }
-        .modal-header h2 { margin: 0; font-size: 1.5rem; }
-        .close-btn { font-size: 2rem; font-weight: bold; color: #aaa; cursor: pointer; }
-        .pending-list { list-style-type: decimal; padding-left: 20px; }
-        .pending-list li { padding: 5px 0; }
+        .modal { 
+            display: none; 
+            position: fixed; 
+            z-index: 100; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.6); 
+        }
+        .modal-content { 
+            background-color: #fff; 
+            margin: 10% auto; 
+            padding: 20px; 
+            border-radius: 12px; 
+            width: 90%; 
+            max-width: 400px; 
+        }
+        .modal-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid #dee2e6; 
+            padding-bottom: 10px; 
+            margin-bottom: 10px; 
+        }
+        .modal-header h2 { 
+            margin: 0; 
+            font-size: 1.2rem; 
+        }
+        .close-btn { 
+            font-size: 1.5rem; 
+            font-weight: bold; 
+            color: #aaa; 
+            cursor: pointer; 
+        }
+        .pending-list { 
+            list-style-type: decimal; 
+            padding-left: 20px; 
+            font-size: 0.9rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .pending-list li { 
+            padding: 4px 0; 
+        }
         .branch-card.completed {
-    background-color: #ade7fd; /* 연한 녹색 */
-    border-color: #192987;
-}
+            background-color: #ade7fd;
+            border-color: #192987;
+        }
 
-        @media (max-width: 992px) { .session-container { grid-template-columns: 1fr; } }
+        @media (max-width: 1200px) { 
+            .session-container { grid-template-columns: 1fr; } 
+            .branch-card-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+        }
     </style>
 </head>
 <body>
@@ -42,11 +155,11 @@
         <div class="toolbar"><a href="./tshirt.html" target="_blank">티셔츠 관리 페이지로 이동 &rarr;</a></div>
         <div class="session-container">
             <div class="session-column">
-                <h2>오전조</h2>
+                <h2 id="morning-title">오전조</h2>
                 <div id="morning-cards" class="branch-card-grid"></div>
             </div>
             <div class="session-column">
-                <h2>오후조</h2>
+                <h2 id="afternoon-title">오후조</h2>
                 <div id="afternoon-cards" class="branch-card-grid"></div>
             </div>
         </div>
@@ -68,43 +181,51 @@
         const modal = document.getElementById('pending-modal');
 
         async function loadBranchStatus() {
-    try {
-        const response = await fetch(`${API_URL}/26susi/dashboard/pre-event`);
-        const result = await response.json();
-        if (result.success) {
-            const morningContainer = document.getElementById('morning-cards');
-            const afternoonContainer = document.getElementById('afternoon-cards');
-            let morningHtml = '', afternoonHtml = '';
+            try {
+                const response = await fetch(`${API_URL}/26susi/dashboard/pre-event`);
+                const result = await response.json();
+                if (result.success) {
+                    const morningContainer = document.getElementById('morning-cards');
+                    const afternoonContainer = document.getElementById('afternoon-cards');
+                    let morningHtml = '', afternoonHtml = '';
+                    let morningCount = 0, afternoonCount = 0;
 
-            result.data.forEach(item => {
-                // ⭐️ 미확인 인원(item.pending)이 0이면 'completed' 클래스 추가
-                const cardClass = (item.pending === 0) ? 'branch-card completed' : 'branch-card';
+                    result.data.forEach(item => {
+                        const cardClass = (item.pending === 0) ? 'branch-card completed' : 'branch-card';
+                        const cardHtml = `
+                            <div class="${cardClass}" onclick="showPendingStudents('${item.branch_name}')">
+                                <h3>${item.branch_name}</h3>
+                                <ul class="stats-list">
+                                    <li><span>미</span> <span>${item.pending}</span></li>
+                                    <li><span>참</span> <span>${item.present}</span></li>
+                                    <li><span>결</span> <span>${item.absent}</span></li>
+                                    <li><span>대</span> <span>${item.substitute}</span></li>
+                                    <li><span>신</span> <span>${item.new_count}</span></li>
+                                </ul>
+                            </div>
+                        `;
+                        if (오전조.includes(item.branch_name)) {
+                            morningHtml += cardHtml;
+                            morningCount++;
+                        } else {
+                            afternoonHtml += cardHtml;
+                            afternoonCount++;
+                        }
+                    });
 
-                const cardHtml = `
-                    <div class="${cardClass}" onclick="showPendingStudents('${item.branch_name}')">
-                        <h3>${item.branch_name}</h3>
-                        <ul class="stats-list">
-                            <li><span>미확인</span> <span>${item.pending} 명</span></li>
-                            <li><span>참석</span> <span>${item.present} 명</span></li>
-                            <li><span>결석</span> <span>${item.absent} 명</span></li>
-                            <li><span>대체</span> <span>${item.substitute} 명</span></li>
-                            <li><span>신규</span> <span>${item.new_count} 명</span></li>
-                        </ul>
-                    </div>
-                `;
-                if (오전조.includes(item.branch_name)) {
-                    morningHtml += cardHtml;
-                } else {
-                    afternoonHtml += cardHtml;
+                    // 동적으로 지점 수 업데이트
+                    document.getElementById('morning-title').textContent = `오전조 (${morningCount}개 지점)`;
+                    document.getElementById('afternoon-title').textContent = `오후조 (${afternoonCount}개 지점)`;
+                    document.querySelector('h1').textContent = `사전 현황판 (총 ${morningCount + afternoonCount}개 지점)`;
+
+                    morningContainer.innerHTML = morningHtml || '<p>데이터가 없습니다.</p>';
+                    afternoonContainer.innerHTML = afternoonHtml || '<p>데이터가 없습니다.</p>';
                 }
-            });
-            morningContainer.innerHTML = morningHtml || '<p>데이터가 없습니다.</p>';
-            afternoonContainer.innerHTML = afternoonHtml || '<p>데이터가 없습니다.</p>';
+            } catch (error) { 
+                console.error("사전 현황판 로딩 오류:", error); 
+            }
         }
-    } catch (error) { console.error("사전 현황판 로딩 오류:", error); }
-}
         
-        // ⭐️ 모달을 보여주는 함수 (신규 추가)
         async function showPendingStudents(branchName) {
             const modalTitle = document.getElementById('modal-title');
             const modalList = document.getElementById('modal-list');
@@ -127,7 +248,6 @@
             }
         }
 
-        // ⭐️ 모달을 닫는 함수 (신규 추가)
         function closeModal() {
             modal.style.display = 'none';
         }
