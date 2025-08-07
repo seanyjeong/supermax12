@@ -132,23 +132,45 @@
             }
         }
         
-        async function fetchAllStudents() {
-            if (!currentBranch) return;
-            try {
-                const response = await fetch(`${API_URL}/26susi/students?branchName=${encodeURIComponent(currentBranch)}`);
-                const result = await response.json();
-                if (result.success) {
-                    allStudents = result.data;
-                    allStudents.sort((a, b) => a.student_name.localeCompare(b.student_name));
-                    updateStatusBoard(allStudents);
-                    renderList(allStudents);
-                } else {
-                    alert('학생 목록 로딩 실패: ' + result.message);
+ // branch.html의 스크립트
+async function fetchAllStudents() {
+    if (!currentBranch) return;
+    try {
+        const response = await fetch(`${API_URL}/26susi/students?branchName=${encodeURIComponent(currentBranch)}`);
+        const result = await response.json();
+        if (result.success) {
+            allStudents = result.data;
+            
+            // ⭐️ 여기가 수정된 부분: 수험번호 순서대로 정렬 ⭐️
+            allStudents.sort((a, b) => {
+                // 수험번호가 없는 학생(미배정)은 맨 뒤로 보냄
+                if (!a.exam_number && !b.exam_number) return a.student_name.localeCompare(b.student_name); // 둘 다 없으면 이름순
+                if (!a.exam_number) return 1;
+                if (!b.exam_number) return -1;
+                
+                // 수험번호를 '-' 기준으로 분리 (예: "A-10" -> ["A", "10"])
+                const partsA = a.exam_number.split('-');
+                const partsB = b.exam_number.split('-');
+
+                // 알파벳 부분 비교
+                const letterCompare = partsA[0].localeCompare(partsB[0]);
+                if (letterCompare !== 0) {
+                    return letterCompare;
                 }
-            } catch (error) {
-                alert('서버와 통신 중 오류가 발생했습니다.');
-            }
+                
+                // 알파벳이 같으면, 숫자 부분을 실제 숫자로 변환해서 비교
+                return parseInt(partsA[1], 10) - parseInt(partsB[1], 10);
+            });
+
+            updateStatusBoard(allStudents);
+            renderList(allStudents);
+        } else {
+            alert('학생 목록 로딩 실패: ' + result.message);
         }
+    } catch (error) {
+        alert('서버와 통신 중 오류가 발생했습니다.');
+    }
+}
 
         function updateStatusBoard(students) {
             const total = students.length;
