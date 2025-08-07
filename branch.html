@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>현장 학생 관리</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 15px; background-color: #f4f4f8; }
@@ -15,18 +15,41 @@
         .student-info { margin-bottom: 10px; line-height: 1.5; }
         .student-info strong { font-size: 1.2rem; }
         .student-info span { color: #555; font-size: 0.9rem; }
-        .student-actions button { padding: 10px 15px; margin-right: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .student-actions button { padding: 10px 15px; margin-right: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; }
         .btn-present { background-color: #28a745; color: white; }
         .btn-absent { background-color: #ffc107; }
         .btn-substitute { background-color: #dc3545; color: white; }
+        button:disabled {
+            background-color: #e9ecef !important;
+            color: #6c757d !important;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
         .status-board { display: flex; justify-content: space-around; background-color: #e9ecef; padding: 10px; border-radius: 8px; margin-bottom: 20px; text-align: center; flex-wrap: wrap; }
         .status-item { flex: 1; min-width: 60px; padding: 5px; }
         .status-item h3 { margin: 0 0 5px 0; font-size: 0.9rem; color: #6c757d; }
         .status-item p { margin: 0; font-size: 1.2rem; font-weight: bold; }
         .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
         .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 85%; max-width: 400px; border-radius: 8px; }
-        .modal-content input, .modal-content select { width: 95%; padding: 12px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 5px; font-size: 1rem; }
+        .modal-content input, .modal-content select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
         .modal-actions button { width: 48%; padding: 12px; }
+        #lock-message {
+            text-align: center;
+            color: #dc3545;
+            margin-bottom: 15px;
+            font-weight: bold;
+            background-color: #f8d7da;
+            padding: 10px;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
@@ -48,10 +71,13 @@
             <div class="status-item"><h3>대체</h3><p id="substitute-count">0</p></div>
             <div class="status-item"><h3>신규</h3><p id="new-count">0</p></div>
         </div>
+        
+        <div id="lock-message" style="display: none;"></div>
+
         <div class="search-box">
             <input type="text" id="searchInput" onkeyup="filterStudents()" placeholder="이름 또는 수험번호로 검색...">
         </div>
-        <button class="action-button" onclick="openNewStudentModal()">현장 신규 추가</button>
+        <button class="action-button" id="addNewStudentBtn" onclick="openNewStudentModal()">현장 신규 추가</button>
         <ul class="student-list" id="studentList"></ul>
     </div>
 
@@ -63,11 +89,7 @@
             <select id="sub_gender"><option value="남">남자</option><option value="여">여자</option></select>
             <input type="text" id="sub_school" placeholder="학교">
             <select id="sub_grade">
-                <option value="">학년 선택</option>
-                <option value="1">1학년</option>
-                <option value="2">2학년</option>
-                <option value="3">3학년</option>
-                <option value="N">N수</option>
+                <option value="">학년 선택</option><option value="1">1학년</option><option value="2">2학년</option><option value="3">3학년</option><option value="N">N수</option>
             </select>
             <div class="modal-actions">
                 <button onclick="submitSubstitute()" style="background-color: #dc3545; color: white;">대체 완료</button>
@@ -83,11 +105,7 @@
             <select id="new_gender"><option value="남">남자</option><option value="여">여자</option></select>
             <input type="text" id="new_school" placeholder="학교">
             <select id="new_grade">
-                <option value="">학년 선택</option>
-                <option value="1">1학년</option>
-                <option value="2">2학년</option>
-                <option value="3">3학년</option>
-                <option value="N">N수</option>
+                <option value="">학년 선택</option><option value="1">1학년</option><option value="2">2학년</option><option value="3">3학년</option><option value="N">N수</option>
             </select>
             <div class="modal-actions">
                 <button onclick="submitNewStudent()" style="background-color: #28a745; color: white;">신규 등록</button>
@@ -105,20 +123,16 @@
 
         function handleLogin() {
             const password = document.getElementById('passwordInput').value;
-                const branchPasswords = {
-        '2601': '경산', '0514': '군포', '1093': '분당', 
-        '6098': '수원', '4125': '영통', '2543': '이천', '6977': '동탄',
-        '3912': '용인', '1165': '광주', '9247': '군산', '0705': '순천여수광양',
-        '8934': '익산', '4565': '전주', '4204': '충주', '4291': '논산',
-        '2481': '대전', '4292': '세종', '5591': '청주', '6627': '강남',
-        '7468': '서초', '0821': '하남', '8158': '아산',
-        '7087': '인천서구', '6765': '일산', '3516': '김해', '0265': '대구만촌명덕',
-        '2141': '대구상인성서', '5531': '밀양', '3517': '부산동래', '7816': '서면',
-        '0963': '양산', '9872': '울산', '5845': '창원', '7317': '화명',
-        '2159': '부천', '9868': '인천연수', '5553': '대구칠곡', '9717': '제주',
-        '2673': '강릉', '6332': '원주', '7929': '의정부', '5680': '인천계양',
-        '0917': '철원', '3960': '포천', '0928' : '천안', '9065':'강동'
-    };
+            const branchPasswords = {
+                '2601': '경산', '0514': '군포', '1093': '분당', '6098': '수원', '4125': '영통', '2543': '이천', 
+                '6977': '동탄', '3912': '용인', '1165': '광주', '9247': '군산', '0705': '순천여수광양', '8934': '익산',
+                '4565': '전주', '4204': '충주', '4291': '논산', '2481': '대전', '4292': '세종', '5591': '청주',
+                '6627': '강남', '9065': '강동', '7468': '서초', '0821': '하남', '8158': '아산', '0928': '천안',
+                '7087': '인천서구', '6765': '일산', '3516': '김해', '0265': '대구만촌명덕', '2141': '대구상인성서',
+                '5531': '밀양', '3517': '부산동래', '7816': '서면', '0963': '양산', '9872': '울산', '5845': '창원',
+                '7317': '화명', '2159': '부천', '9868': '인천연수', '5553': '대구칠곡', '9717': '제주', '2673': '강릉',
+                '6332': '원주', '7929': '의정부', '5680': '인천계양', '0917': '철원', '3960': '포천'
+            };
             const branchName = branchPasswords[password];
             if (branchName) {
                 currentBranch = branchName;
@@ -132,45 +146,46 @@
             }
         }
         
- // branch.html의 스크립트
-async function fetchAllStudents() {
-    if (!currentBranch) return;
-    try {
-        const response = await fetch(`${API_URL}/26susi/students?branchName=${encodeURIComponent(currentBranch)}`);
-        const result = await response.json();
-        if (result.success) {
-            allStudents = result.data;
-            
-            // ⭐️ 여기가 수정된 부분: 수험번호 순서대로 정렬 ⭐️
-            allStudents.sort((a, b) => {
-                // 수험번호가 없는 학생(미배정)은 맨 뒤로 보냄
-                if (!a.exam_number && !b.exam_number) return a.student_name.localeCompare(b.student_name); // 둘 다 없으면 이름순
-                if (!a.exam_number) return 1;
-                if (!b.exam_number) return -1;
-                
-                // 수험번호를 '-' 기준으로 분리 (예: "A-10" -> ["A", "10"])
-                const partsA = a.exam_number.split('-');
-                const partsB = b.exam_number.split('-');
+        async function fetchAllStudents() {
+            if (!currentBranch) return;
+            try {
+                const response = await fetch(`${API_URL}/26susi/students?branchName=${encodeURIComponent(currentBranch)}`);
+                const result = await response.json();
+                if (result.success) {
+                    allStudents = result.data;
+                    allStudents.sort((a, b) => {
+                        if (!a.exam_number && !b.exam_number) return a.student_name.localeCompare(b.student_name);
+                        if (!a.exam_number) return 1;
+                        if (!b.exam_number) return -1;
+                        const partsA = a.exam_number.split('-');
+                        const partsB = b.exam_number.split('-');
+                        const letterCompare = partsA[0].localeCompare(partsB[0]);
+                        if (letterCompare !== 0) return letterCompare;
+                        return parseInt(partsA[1], 10) - parseInt(partsB[1], 10);
+                    });
+                    
+                    const activationTime = new Date('2025-08-10T07:50:00');
+                    const now = new Date();
+                    const buttonsDisabled = now < activationTime;
 
-                // 알파벳 부분 비교
-                const letterCompare = partsA[0].localeCompare(partsB[0]);
-                if (letterCompare !== 0) {
-                    return letterCompare;
+                    updateStatusBoard(allStudents);
+                    renderList(allStudents, buttonsDisabled);
+                    document.getElementById('addNewStudentBtn').disabled = buttonsDisabled;
+
+                    const lockMessageEl = document.getElementById('lock-message');
+                    if (buttonsDisabled) {
+                        lockMessageEl.textContent = `출결/신규/대체 기능은 8월 10일 오전 7시 50분부터 가능합니다.`;
+                        lockMessageEl.style.display = 'block';
+                    } else {
+                        lockMessageEl.style.display = 'none';
+                    }
+                } else {
+                    alert('학생 목록 로딩 실패: ' + result.message);
                 }
-                
-                // 알파벳이 같으면, 숫자 부분을 실제 숫자로 변환해서 비교
-                return parseInt(partsA[1], 10) - parseInt(partsB[1], 10);
-            });
-
-            updateStatusBoard(allStudents);
-            renderList(allStudents);
-        } else {
-            alert('학생 목록 로딩 실패: ' + result.message);
+            } catch (error) {
+                alert('서버와 통신 중 오류가 발생했습니다.');
+            }
         }
-    } catch (error) {
-        alert('서버와 통신 중 오류가 발생했습니다.');
-    }
-}
 
         function updateStatusBoard(students) {
             const total = students.length;
@@ -187,7 +202,7 @@ async function fetchAllStudents() {
             document.getElementById('new-count').textContent = newStudent;
         }
 
-        function renderList(students) {
+        function renderList(students, buttonsDisabled) {
             const listEl = document.getElementById('studentList');
             listEl.innerHTML = '';
             students.forEach(s => {
@@ -200,9 +215,9 @@ async function fetchAllStudents() {
                         <span style="color: #dc3545; font-weight: bold;">출결: ${s.attendance || '미정'} | 등록: ${s.status || '정상'}</span>
                     </div>
                     <div class="student-actions">
-                        <button class="btn-present" onclick="markPresent(${s.id})">참석</button>
-                        <button class="btn-absent" onclick="markAbsent(${s.id})">결석</button>
-                        <button class="btn-substitute" onclick="openSubstituteModal(${s.id})">대체</button>
+                        <button class="btn-present" onclick="markPresent(${s.id})" ${buttonsDisabled ? 'disabled' : ''}>참석</button>
+                        <button class="btn-absent" onclick="markAbsent(${s.id})" ${buttonsDisabled ? 'disabled' : ''}>결석</button>
+                        <button class="btn-substitute" onclick="openSubstituteModal(${s.id})" ${buttonsDisabled ? 'disabled' : ''}>대체</button>
                     </div>
                 `;
                 listEl.appendChild(item);
