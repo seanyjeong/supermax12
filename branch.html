@@ -208,18 +208,18 @@
             students.forEach(s => {
                 const item = document.createElement('li');
                 item.dataset.studentId = s.id;
-                item.innerHTML = `
-                    <div class="student-info">
-                        <strong>${s.student_name}</strong> (${s.exam_number || '미배정'})<br>
-                        <span>${s.school || '학교 정보 없음'} | ${s.grade || '학년 정보 없음'}</span><br>
-                        <span style="color: #dc3545; font-weight: bold;">출결: ${s.attendance || '미정'} | 등록: ${s.status || '정상'}</span>
-                    </div>
-                    <div class="student-actions">
-                        <button class="btn-present" onclick="markPresent(${s.id})" ${buttonsDisabled ? 'disabled' : ''}>참석</button>
-                        <button class="btn-absent" onclick="markAbsent(${s.id})" ${buttonsDisabled ? 'disabled' : ''}>결석</button>
-                        <button class="btn-substitute" onclick="openSubstituteModal(${s.id})" ${buttonsDisabled ? 'disabled' : ''}>대체</button>
-                    </div>
-                `;
+item.innerHTML = `
+    <div class="student-info">
+        <strong>${s.student_name} (${s.gender})</strong> (${s.exam_number || '미배정'})<br>
+        <span>${s.school || '학교 정보 없음'} | ${s.grade || '학년 정보 없음'}</span><br>
+        <span style="color: #dc3545; font-weight: bold;">출결: ${s.attendance || '미정'} | 등록: ${s.status || '정상'}</span>
+    </div>
+    <div class="student-actions">
+        <button class="btn-present" onclick="markPresent(${s.id})" ${buttonsDisabled ? 'disabled' : ''}>참석</button>
+        <button class="btn-absent" onclick="markAbsent(${s.id})" ${buttonsDisabled ? 'disabled' : ''}>결석</button>
+        <button class="btn-substitute" onclick="openSubstituteModal(${s.id})" ${buttonsDisabled ? 'disabled' : ''}>대체</button>
+    </div>
+`;
                 listEl.appendChild(item);
             });
         }
