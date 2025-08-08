@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -95,7 +96,7 @@
         <div id="record-form" class="card record-form" style="display: none;">
             <h3><span id="form-student-name"></span> <small>(<span id="form-exam-number"></span>)</small></h3>
             <div class="record-entry">
-               <input type="text" id="record-value" oninput="getLiveScore()" placeholder="기록 또는 'F' 입력" autocomplete="off">
+<input type="text" id="record-value" oninput="debouncedGetLiveScore()" placeholder="기록 또는 'F' 입력" autocomplete="off">
                 <span id="score-display" class="score-display">0점</span>
             </div>
             <div class="record-buttons">
@@ -246,6 +247,14 @@
             } catch (error) { console.error('점수 계산 실패:', error); }
         }
 
+        function debounce(func, delay) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), delay);
+    };
+}
+
         async function saveFoulRecord() {
             const student = currentStudents.find(s => s.id === selectedStudentId);
             if (!student) return;
@@ -294,6 +303,8 @@
                 btnLoader.style.display = 'none';
             }
         }
+
+        const debouncedGetLiveScore = debounce(getLiveScore, 300);
     </script>
 </body>
 </html>
