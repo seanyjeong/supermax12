@@ -406,17 +406,23 @@
         // 동일한 JavaScript 코드 유지
         const API_URL = 'https://supermax.kr';
 
-        function formatRecord(event, recordValue) {
-            if (recordValue === null || recordValue === undefined) return '-';
-            const recordNum = parseFloat(recordValue);
-            switch (event) {
-                case '제멀': return `${recordNum.toFixed(0)} cm`;
-                case '메디신볼': return `${recordNum.toFixed(1)} m`;
-                case '10m': return `${recordNum.toFixed(1)} 초`;
-                case '배근력': return `${recordNum.toFixed(1)} kg`;
-                default: return recordValue;
-            }
-        }
+function formatRecord(event, recordValue) {
+    if (recordValue === null || recordValue === undefined) return '-';
+    const recordNum = parseFloat(recordValue);
+    
+    // ⭐️ 10m 달리기일 경우 toFixed(2)로 수정
+    if (event === '10m') {
+        return `${recordNum.toFixed(2)} 초`;
+    }
+    
+    // 나머지 종목은 기존 로직 유지
+    switch (event) {
+        case '제멀': return `${recordNum.toFixed(0)} cm`;
+        case '메디신볼': return `${recordNum.toFixed(1)} m`;
+        case '배근력': return `${recordNum.toFixed(1)} kg`;
+        default: return recordValue;
+    }
+}
 
         async function fetchRankings() {
             const classType = document.getElementById('class-type').value;
