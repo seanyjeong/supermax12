@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>조별 진행 현황판</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f8; }
+        .container { max-width: 1200px; margin: auto; }
+        h1 { text-align: center; color: #333; }
+        .progress-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .progress-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .progress-card h2 {
+            margin: 0;
+            padding: 15px;
+            background-color: #007bff;
+            color: white;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        .progress-list { list-style: none; padding: 15px; margin: 0; }
+        .progress-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .progress-list li:last-child { border-bottom: none; }
+        .progress-list .label { color: #6c757d; }
+        .progress-list .value { font-weight: 600; }
+        .all-complete { background-color: #d4edda; } /* 4종목 완료 시 배경색 */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>조별 진행 현황판</h1>
+        <div id="progress-grid" class="progress-grid">
+            <p>데이터를 불러오는 중...</p>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://supermax.kr';
+
+        async function updateGroupProgress() {
+            try {
+                const response = await fetch(`${API_URL}/26susi/dashboard/group-progress`);
+                const result = await response.json();
+                const grid = document.getElementById('progress-grid');
+
+                if (result.success) {
+                    grid.innerHTML = ''; // 기존 내용 삭제
+                    const sortedGroups = Object.keys(result.data).sort((a, b) => a.localeCompare(b));
+                    
+                    if (sortedGroups.length === 0) {
+                        grid.innerHTML = '<p>아직 진행 데이터가 없습니다.</p>';
+                        return;
+                    }
+
+                    sortedGroups.forEach(groupName => {
+                        const groupData = result.data[groupName];
+                        const isAllComplete = groupData.attended === groupData.allCompleted;
+                        
+                        const cardHtml = `
+                            <div class="progress-card ${isAllComplete ? 'all-complete' : ''}">
+                                <h2>${groupName}조</h2>
+                                <ul class="progress-list">
+                                    <li><span class="label">참석 인원</span> <span class="value">${groupData.attended} 명</span></li>
+                                    <li><span class="label">4종목 완료</span> <span class="value">${groupData.allCompleted} 명</span></li>
+                                    <hr>
+                                    <li><span class="label">제자리멀리뛰기</span> <span class="value">${groupData.events['제멀']} 명</span></li>
+                                    <li><span class="label">메디신볼</span> <span class="value">${groupData.events['메디신볼']} 명</span></li>
+                                    <li><span class="label">10m 왕복</span> <span class="value">${groupData.events['10m']} 명</span></li>
+                                    <li><span class="label">배근력</span> <span class="value">${groupData.events['배근력']} 명</span></li>
+                                </ul>
+                            </div>
+                        `;
+                        grid.innerHTML += cardHtml;
+                    });
+                } else {
+                    grid.innerHTML = '<p>데이터를 불러오는 데 실패했습니다.</p>';
+                }
+            } catch (error) {
+                document.getElementById('progress-grid').innerHTML = '<p>서버와 통신할 수 없습니다.</p>';
+                console.error("조별 진행 현황 로딩 오류:", error);
+            }
+        }
+
+        // 페이지 로드 시 바로 실행하고, 10초마다 자동으로 새로고침
+        window.onload = () => {
+            updateGroupProgress();
+            setInterval(updateGroupProgress, 10000); // 10000ms = 10초
+        };
+    </script>
+</body>
+</html>
