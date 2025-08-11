@@ -114,3 +114,154 @@
             </table>
         </div>
     </div>
+    <script>
+        const API_URL = 'https://supermax.kr';
+        let currentBranch = '';
+        let branchData = [];
+        let overallRankData = {};
+        let currentRankScope = 'branch';
+        const EVENTS = { '제멀': 'avg-jemul', '메디신볼': 'avg-medball', '10m': 'avg-10m', '배근력': 'avg-backstr' };
+        let sortDirections = {};
+
+        function handleLogin() {
+            const password = document.getElementById('passwordInput').value;
+            const branchPasswords = {
+                '2601': '경산', '0514': '군포', '1093': '분당', '6098': '수원', '4125': '영통', '2543': '이천', '6977': '동탄', '3912': '용인', '1165': '광주', '9247': '군산', '0705': '순천여수광양', '8934': '익산', '4565': '전주', '4204': '충주', '4291': '논산', '2481': '대전', '4292': '세종', '5591': '청주', '6627': '강남', '9065': '강동', '7468': '서초', '0821': '하남', '8158': '아산', '0928': '천안', '7087': '인천서구', '8691': '일산', '3516': '김해', '0265': '대구만촌명덕', '2141': '대구상인성서', '5531': '밀양', '3517': '부산동래', '7816': '서면', '0963': '양산', '9872': '울산', '5845': '창원', '7317': '화명', '2159': '부천', '9868': '인천연수', '5553': '대구칠곡', '9717': '제주', '2673': '강릉', '6332': '원주', '7929': '의정부', '5680': '인천계양', '0917': '철원', '3960': '포천'
+            };
+            const branchName = branchPasswords[password];
+            if (branchName) {
+                currentBranch = branchName;
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+                document.getElementById('report-title').textContent = `${currentBranch} 교육원 결과 리포트`;
+                fetchReportData();
+            } else {
+                alert('비밀번호가 올바르지 않습니다.');
+            }
+        }
+
+        async function fetchReportData() {
+            const tbody = document.getElementById('report-body');
+            tbody.innerHTML = `<tr><td colspan="17">데이터 로딩 중...</td></tr>`;
+            try {
+                const [branchRes, overallRankRes] = await Promise.all([
+                    fetch(`${API_URL}/26susi/branch-report?branchName=${encodeURIComponent(currentBranch)}`),
+                    fetch(`${API_URL}/26susi/all-ranks`)
+                ]);
+                const branchResult = await branchRes.json();
+                const overallRankResult = await overallRankRes.json();
+                if (branchResult.success && overallRankResult.success) {
+                    branchData = branchResult.data;
+                    overallRankData = overallRankResult.data;
+                    filterByGender();
+                } else {
+                     tbody.innerHTML = `<tr><td colspan="17">데이터를 불러오는 데 실패했습니다.</td></tr>`;
+                }
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="17">서버와 통신할 수 없습니다.</td></tr>`;
+                console.error("Report data loading error:", error);
+            }
+        }
+
+        function filterByGender() {
+            const gender = document.getElementById('gender-filter').value;
+            const dataToShow = (gender === 'all')
+                ? branchData
+                : branchData.filter(student => student.gender === gender);
+            displayAverages(dataToShow);
+            sortReport('overallRank', dataToShow);
+        }
+        
+        function formatRecord(event, recordValue) {
+            if (recordValue === null || recordValue === undefined || isNaN(recordValue)) return '-';
+            const recordNum = parseFloat(recordValue);
+            if (event === '10m') return `${recordNum.toFixed(2)} 초`;
+            if (event === '제멀') return `${recordNum.toFixed(0)} cm`;
+            const unit = (event === '메디신볼') ? ' m' : ' kg';
+            return `${recordNum.toFixed(1)}${unit}`;
+        }
+        
+        function displayAverages(data) {
+            for (const event in EVENTS) {
+                const elementId = EVENTS[event];
+                const records = data.map(s => s.records[event]?.record).filter(r => r !== undefined && r !== null);
+                let average = '-';
+                if (records.length > 0) {
+                    const sum = records.reduce((total, record) => total + parseFloat(record), 0);
+                    average = formatRecord(event, sum / records.length);
+                }
+                document.getElementById(elementId).textContent = average;
+            }
+        }
+
+        function renderReportTable(data) {
+            const tbody = document.getElementById('report-body');
+            let rows = '';
+            data.forEach((student, index) => {
+                rows += `<tr>
+                    <td>${index + 1}</td>
+                    <td>${student.gender}</td>
+                    <td>${student.name}</td>
+                    <td>${student.totalScore}</td>
+                    <td>${currentRankScope === 'branch' ? student.branchOverallRank : (overallRankData[student.id]?.overallRank || '-')}</td>`;
+                
+                Object.keys(EVENTS).forEach(eventKey => {
+                    const rec = student.records[eventKey];
+                    const rank = (currentRankScope === 'branch')
+                        ? rec?.branchRank
+                        : overallRankData[student.id]?.[eventKey]?.rank;
+                    rows += `
+                        <td>${rec ? rec.record : '-'}</td>
+                        <td>${rec ? rec.score : '-'}</td>
+                        <td>${rank || '-'}</td>`;
+                });
+                rows += `</tr>`;
+            });
+            tbody.innerHTML = rows || `<tr><td colspan="17">표시할 데이터가 없습니다.</td></tr>`;
+        }
+
+        function setRankScope(scope) {
+            currentRankScope = scope;
+            document.getElementById('rank-scope-branch').classList.toggle('active', scope === 'branch');
+            document.getElementById('rank-scope-overall').classList.toggle('active', scope === 'overall');
+            filterByGender();
+        }
+
+        function sortReport(sortBy, data) {
+            const dataToSort = data || branchData.filter(student => {
+                const gender = document.getElementById('gender-filter').value;
+                return gender === 'all' || student.gender === gender;
+            });
+            const direction = sortDirections[sortBy] === 'asc' ? 'desc' : 'asc';
+            sortDirections = { [sortBy]: direction };
+            dataToSort.sort((a, b) => {
+                let valA, valB;
+                if (sortBy === 'overallRank') {
+                    valA = (currentRankScope === 'branch') ? a.branchOverallRank : (overallRankData[a.id]?.overallRank || 9999);
+                    valB = (currentRankScope === 'branch') ? b.branchOverallRank : (overallRankData[b.id]?.overallRank || 9999);
+                } else {
+                    valA = (currentRankScope === 'branch') ? (a.records[sortBy]?.branchRank || 9999) : (overallRankData[a.id]?.[sortBy]?.rank || 9999);
+                    valB = (currentRankScope === 'branch') ? (b.records[sortBy]?.branchRank || 9999) : (overallRankData[b.id]?.[sortBy]?.rank || 9999);
+                }
+                return direction === 'asc' ? valA - valB : valB - valA;
+            });
+            renderReportTable(dataToSort);
+        }
+
+        function downloadExcel() {
+            const table = document.getElementById('report-table');
+            const file_name = `${currentBranch}_${document.getElementById('gender-filter').value}_결과.xls`;
+            const style = `<style> table, th, td { border: 1px solid black; border-collapse: collapse; text-align: center; } </style>`;
+            const template = `
+                <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+                <head><meta charset="UTF-8">${style}</head>
+                <body><table border="1">${table.innerHTML}</table></body></html>`;
+            const base64 = (s) => window.btoa(unescape(encodeURIComponent(s)));
+            const link = document.createElement('a');
+            link.href = 'data:application/vnd.ms-excel;base64,' + base64(template);
+            link.download = file_name;
+            link.click();
+        }
+    </script>
+</body>
+</html>
