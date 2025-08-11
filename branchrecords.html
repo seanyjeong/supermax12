@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지점 결과 리포트</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background-color: #f4f4f8; }
+        .container { max-width: 95%; margin: auto; }
+        h1 { text-align: center; }
+        .card { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .login-box { max-width: 400px; margin: 50px auto; text-align: center; }
+        .toolbar { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .toolbar button { padding: 10px 20px; border: 1px solid #ccc; background-color: white; color: #333; border-radius: 5px; cursor: pointer; font-weight: 500; font-size: 1rem; }
+        .toolbar button.active { background-color: #007bff; color: white; border-color: #007bff; }
+        .toolbar .excel-btn { background-color: #198754; color: white; border: none; }
+        .filter-group { display: flex; align-items: center; gap: 10px; }
+        .toolbar select { padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem; }
+        .averages-card { display: flex; justify-content: space-around; text-align: center; }
+        .average-item { flex: 1; }
+        .average-item h3 { margin: 0 0 5px 0; font-size: 0.9rem; color: #6c757d; }
+        .average-item p { margin: 0; font-size: 1.3rem; font-weight: bold; color: #007bff; }
+        
+        /* ⭐️ 스크롤 컨테이너와 테이블 최종 스타일 ⭐️ */
+        .table-container {
+            overflow-y: auto; /* 여기서만 세로 스크롤이 생김 */
+            max-height: 70vh; /* 화면 높이의 70%를 넘으면 스크롤 */
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: center;
+            white-space: nowrap;
+            background: white; /* 내용이 헤더를 덮지 않도록 배경색 지정 */
+        }
+        tbody tr:hover td {
+            background-color: #f1f1f1;
+        }
+        th {
+            position: sticky; /* 헤더를 스크롤 컨테이너에 고정 */
+            top: -1px; /* 맨 위에 딱 붙임 */
+            background: #f8f9fa;
+            font-weight: 600;
+            z-index: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: center;
+            white-space: nowrap;
+        }
+        thead tr:nth-child(2) th {
+            top: 37px; /* 첫 번째 헤더 줄의 높이만큼 띄움 */
+        }
+        th.sortable { cursor: pointer; user-select: none; }
+        th.sortable:hover { background-color: #e2e6ea; }
+    </style>
+</head>
+<body>
+    <div id="login-screen">
+        <div class="card login-box">
+            <h1>지점 리포트 로그인</h1>
+            <input type="password" id="passwordInput" placeholder="비밀번호" style="width: 100%; padding: 12px; margin-bottom: 10px; box-sizing: border-box;">
+            <button onclick="handleLogin()" style="width: 100%; padding: 12px; background-color: #007bff;">로그인</button>
+        </div>
+    </div>
+
+    <div id="main-content" class="container" style="display: none;">
+        <h1 id="report-title"></h1>
+        <div class="toolbar">
+            <div class="filter-group">
+                <label>순위 기준:</label>
+                <button id="rank-scope-branch" class="active" onclick="setRankScope('branch')">지점</button>
+                <button id="rank-scope-overall" onclick="setRankScope('overall')">전체</button>
+            </div>
+            <div class="filter-group">
+                <label for="gender-filter">성별 필터:</label>
+                <select id="gender-filter" onchange="filterByGender()">
+                    <option value="all">전체</option>
+                    <option value="남">남자</option>
+                    <option value="여">여자</option>
+                </select>
+            </div>
+            <button class="excel-btn" onclick="downloadExcel()">엑셀로 다운로드</button>
+        </div>
+        
+        <div class="card averages-card">
+            <div class="average-item"><h3>제멀 평균</h3><p id="avg-jemul">-</p></div>
+            <div class="average-item"><h3>메디신볼 평균</h3><p id="avg-medball">-</p></div>
+            <div class="average-item"><h3>10m 왕복 평균</h3><p id="avg-10m">-</p></div>
+            <div class="average-item"><h3>배근력 평균</h3><p id="avg-backstr">-</p></div>
+        </div>
+
+        <div class="card table-container" style="margin-top: 20px; padding: 0;">
+            <table id="report-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2">No.</th><th rowspan="2">성별</th><th rowspan="2">이름</th>
+                        <th rowspan="2">총점</th><th class="sortable" rowspan="2" onclick="sortReport('overallRank')">종합순위</th>
+                        <th colspan="3">제자리멀리뛰기</th><th colspan="3">메디신볼</th>
+                        <th colspan="3">10m 왕복</th><th colspan="3">배근력</th>
+                    </tr>
+                    <tr>
+                        <th>기록</th><th>점수</th><th class="sortable" onclick="sortReport('제멀')">순위</th>
+                        <th>기록</th><th>점수</th><th class="sortable" onclick="sortReport('메디신볼')">순위</th>
+                        <th>기록</th><th>점수</th><th class="sortable" onclick="sortReport('10m')">순위</th>
+                        <th>기록</th><th>점수</th><th class="sortable" onclick="sortReport('배근력')">순위</th>
+                    </tr>
+                </thead>
+                <tbody id="report-body"></tbody>
+            </table>
+        </div>
+    </div>
